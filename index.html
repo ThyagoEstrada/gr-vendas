@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GR Vendas — Thiago Estrada</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f3;--bg3:#f0ede8;--bgi:#E6F1FB;--bgs:#EAF3DE;--bgw:#FAEEDA;--bgd:#FCEBEB;--tx:#1a1a1a;--tx2:#666;--tx3:#999;--txi:#185FA5;--txs:#3B6D11;--txw:#854F0B;--txd:#A32D2D;--bo:rgba(0,0,0,.12);--bo2:rgba(0,0,0,.25);--r:8px;--rl:12px}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;--tx:#f0f0f0;--tx2:#aaa;--tx3:#555;--bo:rgba(255,255,255,.12);--bo2:rgba(255,255,255,.25)}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--tx);background:var(--bg3);height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sb{width:192px;min-width:192px;background:var(--bg2);border-right:.5px solid var(--bo);display:flex;flex-direction:column;overflow-y:auto}
+.logo{padding:14px 16px;font-size:15px;font-weight:600;border-bottom:.5px solid var(--bo)}
+.logo small{font-size:11px;color:var(--tx2);display:block;font-weight:400;margin-top:2px}
+.ns{padding:8px 8px 0}
+.nl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;padding:8px 8px 3px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--tx2);margin-bottom:1px}
+.ni:hover,.ni.on{background:var(--bg);color:var(--tx)}
+.ni.on{font-weight:500}
+.mn{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tb{background:var(--bg);border-bottom:.5px solid var(--bo);padding:11px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb h1{font-size:15px;font-weight:500}
+.ct{flex:1;overflow-y:auto;padding:18px 20px;background:var(--bg3)}
+.card{background:var(--bg);border:.5px solid var(--bo);border-radius:var(--rl);padding:14px 18px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:640px){.g4{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}.sb{width:48px}.nl,.logo small,.ni span:last-child{display:none}.logo{padding:14px 8px;text-align:center}}
+.mt{background:var(--bg2);border-radius:var(--r);padding:12px 14px}
+.ml{font-size:11px;color:var(--tx2);margin-bottom:4px}
+.mv{font-size:20px;font-weight:500}
+.ms{font-size:11px;color:var(--tx2);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:.5px solid var(--bo2);border-radius:var(--r);background:transparent;color:var(--tx);font-size:12px;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--bg2)}
+.bp{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.bp:hover{opacity:.85}
+.bs{padding:4px 9px;font-size:11px}
+.bdg{border-color:#E24B4A;color:var(--txd)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 10px;border-bottom:.5px solid var(--bo);font-weight:500;color:var(--tx2);font-size:11px;white-space:nowrap}
+td{padding:8px 10px;border-bottom:.5px solid var(--bo);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.bgs{background:var(--bgs);color:var(--txs)}
+.bgd{background:var(--bgd);color:var(--txd)}
+.bgw{background:var(--bgw);color:var(--txw)}
+.bgi{background:var(--bgi);color:var(--txi)}
+.bg2{background:var(--bg2);color:var(--tx2)}
+.dr td{background:var(--bgw)!important;color:var(--txw)}
+.hide{display:none!important}
+.row{display:flex;align-items:center;gap:8px}
+.rowb{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+input,select,textarea{padding:6px 9px;border:.5px solid var(--bo);border-radius:var(--r);font-size:12px;background:var(--bg);color:var(--tx);font-family:inherit;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--bo2)}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:11px;color:var(--tx2)}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.chip{display:inline-block;padding:2px 6px;border-radius:20px;font-size:10px;background:var(--bg2);border:.5px solid var(--bo);color:var(--tx2)}
+.tabs{display:flex;border-bottom:.5px solid var(--bo);margin-bottom:14px}
+.tab{padding:7px 14px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--tx2);margin-bottom:-1px}
+.tab.on{color:var(--tx);border-bottom-color:var(--tx);font-weight:500}
+.upbox{border:1.5px dashed var(--bo2);border-radius:var(--rl);padding:24px;text-align:center;color:var(--tx2);cursor:pointer}
+.upbox:hover{background:var(--bg2)}
+.al{padding:9px 12px;border-radius:var(--r);font-size:12px;margin-bottom:10px;border-left:3px solid}
+.alw{background:var(--bgw);color:var(--txw);border-color:#EF9F27}
+.als{background:var(--bgs);color:var(--txs);border-color:#639922}
+.ali{background:var(--bgi);color:var(--txi);border-color:#378ADD}
+.alr{background:var(--bgd);color:var(--txd);border-color:#E24B4A}
+.mic{width:36px;height:36px;border-radius:50%;background:var(--bg2);border:.5px solid var(--bo);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;flex-shrink:0}
+.mic.rec{background:var(--bgd);border-color:#E24B4A;animation:pu 1s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.5}}
+.ld{text-align:center;padding:32px;color:var(--tx2);font-size:12px}
+.sbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pb{background:var(--bg2);border-radius:4px;height:6px;overflow:hidden}
+.pf{height:100%;background:#1D9E75;border-radius:4px}
+.ov{overflow-x:auto}
+.snk{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 18px;border-radius:20px;font-size:12px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.snk.on{opacity:1}
+.ov2{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.mdl{background:var(--bg);border-radius:var(--rl);padding:20px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto}
+.file-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg2);border-radius:var(--r);font-size:12px;margin-bottom:4px}
+.fst{font-size:11px;padding:2px 8px;border-radius:20px}
+.rank-bar{height:6px;border-radius:3px;background:#1D9E75;display:inline-block}
+
+.login-wrap{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:9000}
+.login-box{background:var(--bg);border:.5px solid var(--bo);border-radius:var(--rl);padding:32px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.login-logo{font-size:20px;font-weight:600;margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--tx2);margin-bottom:24px}
+.login-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.login-fg label{font-size:11px;color:var(--tx2);font-weight:500}
+.login-fg input{padding:9px 11px;border:.5px solid var(--bo);border-radius:var(--r);font-size:13px;background:var(--bg);color:var(--tx);font-family:inherit;width:100%}
+.login-fg input:focus{outline:none;border-color:var(--bo2)}
+.login-btn{width:100%;padding:10px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;margin-top:4px}
+.login-btn:hover{opacity:.85}
+.login-err{background:var(--bgd);color:var(--txd);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;display:none}
+.user-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)}
+.user-badge strong{color:var(--tx)}
+</style>
+</head>
+<body>
+<div class="snk" id="snk"></div>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">GR Vendas</div>
+    <div class="login-sub">Thiago Estrada — Acesso restrito</div>
+    <div class="login-err" id="login-err">Usuário ou senha incorretos</div>
+    <div class="login-fg"><label>Usuário</label><input type="text" id="lu" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()"></div>
+    <div class="login-fg"><label>Senha</label><input type="password" id="lp" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"></div>
+    <button class="login-btn" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="app">
+<div class="sb">
+  <div class="logo">GR Vendas<small>Thiago Estrada</small></div>
+  <div class="ns"><div class="nl">Principal</div>
+    <div class="ni on" data-p="dashboard"><span>◻</span><span>Dashboard</span></div></div>
+  <div class="ns"><div class="nl">Cadastros</div>
+    <div class="ni" data-p="clientes"><span>👤</span><span>Clientes</span></div>
+    <div class="ni" data-p="prospecoes"><span>🔍</span><span>Prospecções</span></div>
+    <div class="ni" data-p="cidades"><span>📍</span><span>Cidades</span></div>
+    <div class="ni" data-p="tabelas"><span>📋</span><span>Tabelas</span></div>
+    <div class="ni" data-p="grupos"><span>🏢</span><span>Grupos</span></div>
+    <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div></div>
+  <div class="ns"><div class="nl">Vendas</div>
+    <div class="ni" data-p="pedidos"><span>📦</span><span>Pedidos</span></div>
+    <div class="ni" data-p="programados"><span>📅</span><span>Programados</span></div>
+    <div class="ni" data-p="comissoes"><span>💰</span><span>Comissões</span></div></div>
+  <div class="ns"><div class="nl">Relatórios</div>
+    <div class="ni" data-p="relatorios"><span>📊</span><span>Relatórios</span></div>
+    <div class="ni" data-p="rel-anual"><span>🏆</span><span>Anual por Cliente</span></div>
+    <div class="ni" data-p="divergencias"><span>⚠️</span><span>Divergências</span></div></div>
+</div>
+<div class="mn">
+  <div class="tb"><h1 id="ptitle">Dashboard</h1><div class="row" style="gap:12px"><div id="user-info"></div><div class="row" id="ta"></div></div></div>
+  <div class="ct" id="ct"></div>
+</div>
+</div>
+<script>
+const SB='https://lbrhckgeuigxlpaouyff.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxicmhja2dldWlneGxwYW91eWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3OTE1NzcsImV4cCI6MjA5MjM2NzU3N30.77oF1jiMcYFBVyRAvmQ8OWdeNz-vmlVL-A1HdXLUmLA';
+const H={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+KEY};
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+async function sb(t,m='GET',b=null,q=''){
+  const r=await fetch(`${SB}/rest/v1/${t}${q}`,{method:m,headers:{...H,'Prefer':m==='POST'?'return=representation':''},body:b?JSON.stringify(b):null});
+  if(!r.ok)throw new Error(await r.text());
+  if(m==='DELETE'||r.status===204)return true;
+  return r.json();
+}
+
+// Processar PDF via API do Claude (Anthropic)
+async function enviarPDF(file, ano){
+  // Converter PDF para base64
+  const toBase64 = file => new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+  const b64 = await toBase64(file);
+  const anoFinal = ano || new Date().getFullYear();
+
+  const prompt = `Você é um parser de PDF especializado. Analise este PDF de relatório de vendas e extraia os dados estruturados.
+
+REGRAS IMPORTANTES:
+1. Se for "Relatório de Entradas": extraia cada linha de tabela por pedido (tipo="entrada")
+2. Se for relatório de saídas/comissão: extraia cada linha (tipo="saida")
+3. Detecte mês e ano do cabeçalho do PDF
+4. Para entradas: cada linha tem numero_pedido, data_pedido (YYYY-MM-DD), cliente_nome, tabela_codigo, percentual (número), valor (número), eh_estorno (boolean)
+5. Para saídas: cada linha tem numero_pedido, cliente_nome, nf, valor, tabela_codigo, percentual, extra, comissao
+6. Tabela X = percentual 0
+7. Retorne APENAS JSON válido, sem texto adicional, no formato:
+{
+  "tipo": "entrada" ou "saida",
+  "mes": número,
+  "ano": número,
+  "linhas": [array de objetos]
+}`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      messages: [{
+        role: 'user',
+        content: [
+          {type:'document', source:{type:'base64', media_type:'application/pdf', data:b64}},
+          {type:'text', text: prompt}
+        ]
+      }]
+    })
+  });
+
+  if(!resp.ok) throw new Error('Erro na API: '+(await resp.text()));
+  const data = await resp.json();
+  const txt = data.content.find(c=>c.type==='text')?.text||'{}';
+  const clean = txt.replace(/```json|```/g,'').trim();
+  const resultado = JSON.parse(clean);
+
+  // Salvar no Supabase
+  const {tipo, mes, ano:anoR, linhas} = resultado;
+
+  if(!linhas||linhas.length===0) throw new Error('Nenhuma linha extraída do PDF');
+
+  // Cadastrar clientes novos
+  const existentes = await sb('clientes','GET',null,'?select=nome');
+  const setExist = new Set(existentes.map(c=>c.nome.toUpperCase().trim()));
+  const novos = [...new Set(linhas.map(l=>l.cliente_nome||l.nome||''))].filter(n=>n&&!setExist.has(n.toUpperCase().trim()));
+  for(const nome of novos) await sb('clientes','POST',{nome,status:'ativo'});
+
+  if(tipo==='entrada'){
+    await sb('entradas','DELETE',null,`?mes=eq.${mes}&ano=eq.${anoR}`);
+    // Inserir em lotes de 50
+    for(let i=0;i<linhas.length;i+=50){
+      await sb('entradas','POST',linhas.slice(i,i+50));
+    }
+    // Conferir divergências
+    const peds = await sb('pedidos','GET',null,'?select=numero_pedido,valor_total');
+    const ag={};
+    linhas.forEach(l=>{if(!ag[l.numero_pedido])ag[l.numero_pedido]=l});
+    const divs=[];
+    for(const[np,l]of Object.entries(ag)){
+      const ped=peds.find(p=>p.numero_pedido===np);
+      if(!ped) divs.push({tipo:'entrada',mes,ano:anoR,numero_pedido:np,campo_divergente:'nao_encontrado',valor_pdf:np,valor_sistema:'não cadastrado'});
+      else if(Math.abs(parseFloat(ped.valor_total)-parseFloat(l.valor))>0.10)
+        divs.push({tipo:'entrada',mes,ano:anoR,numero_pedido:np,campo_divergente:'valor',valor_pdf:String(l.valor),valor_sistema:String(ped.valor_total)});
+    }
+    await sb('divergencias','DELETE',null,`?tipo=eq.entrada&mes=eq.${mes}&ano=eq.${anoR}`);
+    if(divs.length>0) await sb('divergencias','POST',divs);
+    resultado.divergencias=divs.length;
+  } else {
+    await sb('saidas','DELETE',null,`?mes=eq.${mes}&ano=eq.${anoR}`);
+    for(let i=0;i<linhas.length;i+=50){
+      await sb('saidas','POST',linhas.slice(i,i+50));
+    }
+    const divs=linhas.filter(l=>l.tabela_codigo!=='X'&&l.comissao!==0&&Math.abs(l.valor*(l.percentual+l.extra)/100-l.comissao)>0.05)
+      .map(l=>({tipo:'saida',mes,ano:anoR,numero_pedido:l.numero_pedido,campo_divergente:'comissao',valor_pdf:String(l.comissao),valor_sistema:(l.valor*(l.percentual+l.extra)/100).toFixed(2)}));
+    await sb('divergencias','DELETE',null,`?tipo=eq.saida&mes=eq.${mes}&ano=eq.${anoR}`);
+    if(divs.length>0) await sb('divergencias','POST',divs);
+    resultado.divergencias=divs.length;
+  }
+
+  resultado.clientes_novos=novos.length;
+  return resultado;
+}
+
+const snk=msg=>{const e=document.getElementById('snk');e.textContent=msg;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2800)};
+const R=v=>'R$ '+parseFloat(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const N=v=>parseFloat(v||0).toFixed(2).replace('.',',');
+const D=s=>{if(!s)return'';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`};
+const T=()=>new Date().toISOString().split('T')[0];
+const F1=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`};
+const SBG=s=>s==='Faturado'?'bgs':s==='Cancelado'?'bgd':s==='Importado'?'bgi':'bgw';
+function mdl(html){const o=document.createElement('div');o.className='ov2';o.innerHTML=`<div class="mdl">${html}</div>`;o.addEventListener('click',e=>{if(e.target===o)o.remove()});document.body.appendChild(o)}
+function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`)?.classList.toggle('on',`${p}${s}`===id);document.getElementById(`tp-${p}${s}`)?.classList.toggle('hide',`${p}${s}`!==id)})}
+
+let CC=[],TC=[],CL=[],SC=[];
+document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>go(e.dataset.p)));
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente'};
+
+async function go(p){
+  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===p));
+  document.getElementById('ptitle').textContent=TITLES[p]||p;
+  document.getElementById('ta').innerHTML='';
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+  if(!CC.length)CC=await sb('cidades','GET',null,'?order=cidade');
+  if(!TC.length)TC=await sb('tabelas_comissao','GET',null,'?order=codigo');
+  if(!CL.length)CL=await sb('clientes','GET',null,'?order=nome&select=id,codigo,nome,status');
+  if(!SC.length){try{SC=await sb('segmentos','GET',null,'?order=nome')}catch(e){SC=[]}}
+  pages[p]&&pages[p]();
+}
+const pages={};
+
+// ═══ DASHBOARD ═══════════════════════════════════════════════════════════════
+pages.dashboard=async function(){
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    const[pd,sa,dv,prog]=await Promise.all([
+      sb('pedidos','GET',null,'?select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=200'),
+      sb('saidas','GET',null,'?select=comissao,valor&limit=1000'),
+      sb('divergencias','GET',null,'?resolvida=eq.false&select=id'),
+      sb('pedidos','GET',null,'?tipo=eq.Programado&status=not.in.(Cancelado,Faturado)&order=data_entrega&limit=5&select=id,numero_pedido,data_entrega,clientes(nome)').catch(()=>[])
+    ]);
+    const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+    const pm=pd.filter(p=>p.data_pedido?.startsWith(`${ano}-${String(mes).padStart(2,'0')}`));
+    const tE=pm.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
+    const tS=sa.reduce((s,p)=>s+parseFloat(p.valor||0),0);
+    const tC=sa.reduce((s,p)=>s+parseFloat(p.comissao||0),0);
+    const meta=370000,pct=Math.min(100,Math.round(tE/meta*100));
+    const progRows=prog.map(r=>{
+      const diff=r.data_entrega?Math.round((new Date(r.data_entrega+'T00:00:00')-new Date())/86400000):null;
+      const cls=diff===null?'bg2':diff<0?'bgd':diff<=3?'bgw':'bgs';
+      const label=diff===null?'—':diff<0?`${Math.abs(diff)}d atraso`:diff===0?'Hoje':`${diff}d`;
+      return `<tr><td>${r.clientes?.nome||'—'}</td><td>${r.numero_pedido||'—'}</td><td>${D(r.data_entrega)||'—'}</td><td><span class="badge ${cls}">${label}</span></td></tr>`;
+    }).join('');
+    document.getElementById('ct').innerHTML=`
+    <div class="g4">
+      <div class="mt"><div class="ml">Pedidos este mês</div><div class="mv">${pm.length}</div></div>
+      <div class="mt"><div class="ml">Total entradas</div><div class="mv">${R(tE)}</div><div class="ms">Meta: ${R(meta)}</div></div>
+      <div class="mt"><div class="ml">Total saídas</div><div class="mv">${R(tS)}</div></div>
+      <div class="mt"><div class="ml">Comissão apurada</div><div class="mv" style="color:#1D9E75">${R(tC)}</div></div>
+    </div>
+    <div class="card">
+      <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">META DO MÊS</span><span class="badge ${pct>=100?'bgs':'bgw'}">${pct}% atingido</span></div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">${R(tE)} / ${R(meta)}</div>
+      <div class="pb"><div class="pf" style="width:${pct}%"></div></div>
+    </div>
+    ${dv.length?`<div class="al alw">${dv.length} divergência(s) — <a href="#" onclick="go('divergencias');return false" style="color:inherit;font-weight:500">verificar</a></div>`:''}
+    ${prog.length?`<div class="card">
+      <div class="rowb" style="margin-bottom:10px"><span style="font-size:11px;font-weight:500;color:var(--tx2)">PRÓXIMOS PROGRAMADOS</span><button class="btn bs" onclick="go('programados')">Ver todos</button></div>
+      <div class="ov"><table><thead><tr><th>Cliente</th><th>Nº Pedido</th><th>Entrega</th><th>Situação</th></tr></thead>
+      <tbody>${progRows}</tbody></table></div>
+    </div>`:''}
+    <div class="card">
+      <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">ÚLTIMOS PEDIDOS</span><button class="btn bs" onclick="go('pedidos')">Ver todos</button></div>
+      <div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Valor</th><th>Status</th></tr></thead>
+      <tbody>${pd.slice(0,8).map(p=>`<tr><td>${p.numero_pedido||'—'}</td><td>${D(p.data_pedido)}</td><td>${R(p.valor_total)}</td><td><span class="badge ${SBG(p.status)}">${p.status}</span></td></tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="background:var(--bg2)">
+        <div style="font-weight:500;margin-bottom:6px">Importar PDFs</div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">Instalar: <code style="background:var(--bg3);padding:2px 5px;border-radius:4px;font-size:11px">pip install pdfplumber requests</code></div>
+        <div style="margin-top:10px"><button class="btn bp" onclick="downloadScript()">Baixar importar_pdfs.py</button></div>
+      </div>
+      <div class="card" style="background:var(--bg2)">
+        <div style="font-weight:500;margin-bottom:6px">Pedidos por Voz</div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">Padrão: <em>"Novo pedido, cliente NOME, valor VALOR, tabela TAB PERC."</em></div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Ex: "Novo pedido, cliente Bassano Alimentos, valor 7 mil 669 e 20, tabela D 3,5."</div>
+        <button class="btn bp" onclick="downloadTranscrever()">Baixar transcrever_pedidos.py</button>
+      </div>
+    </div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro ao carregar dashboard: ${e.message}</div>`}
+};
+
+// ═══ CLIENTES ════════════════════════════════════════════════════════════════
+pages.clientes=async function(f='',sf=''){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmC()">+ Novo</button>`;
+  try{
+    let rows=await sb('clientes','GET',null,'?select=id,codigo,nome,status,cidade_id,grupo_id,cidades(cidade),grupos_economicos(nome)&order=nome');
+    const u={};(await sb('pedidos','GET',null,'?select=cliente_id,data_pedido&order=data_pedido.desc&limit=500')).forEach(p=>{if(!u[p.cliente_id])u[p.cliente_id]=p.data_pedido});
+    const fil=rows.filter(r=>(!f||r.nome.toLowerCase().includes(f.toLowerCase()))&&(!sf||r.status===sf));
+    document.getElementById('ct').innerHTML=`
+    <div class="sbar">
+      <input type="text" placeholder="Buscar cliente..." value="${f}" id="bc" oninput="pages.clientes(this.value,document.getElementById('sc').value)">
+      <select id="sc" onchange="pages.clientes(document.getElementById('bc').value,this.value)" style="width:auto">
+        <option value="">Todos</option><option value="ativo" ${sf==='ativo'?'selected':''}>Ativo</option><option value="inativo" ${sf==='inativo'?'selected':''}>Inativo</option>
+      </select>
+      <span style="font-size:11px;color:var(--tx2);align-self:center">${fil.length} clientes</span>
+    </div>
+    <div class="card"><div class="ov"><table><thead><tr><th>Cliente</th><th>Cidade</th><th>Status</th><th>Últ. pedido</th><th></th></tr></thead>
+    <tbody>${fil.map(r=>`<tr><td>${r.nome}</td><td>${r.cidades?.cidade||'—'}</td><td><span class="badge ${r.status==='ativo'?'bgs':'bgd'}">${r.status}</span></td><td>${D(u[r.id])||'—'}</td><td><button class="btn bs" onclick="fmC(${r.id})">Editar</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+async function fmC(id=null){
+  const c=id?(await sb('clientes','GET',null,`?id=eq.${id}&select=*,grupos_economicos(id,nome)`))[0]:{};
+  let GR=[];try{GR=await sb('grupos_economicos','GET',null,'?order=nome')}catch(e){}
+  const grO=GR.map(x=>`<option value="${x.id}" ${c.grupo_id==x.id?'selected':''}>${x.id} - ${x.nome}</option>`).join('');
+  const cO=CC.map(x=>`<option value="${x.id}" ${c.cidade_id==x.id?'selected':''}>${x.cidade} - ${x.estado}</option>`).join('');
+  mdl(`<div class="rowb" style="margin-bottom:12px"><span style="font-weight:500">${id?'Editar':'Novo'} cliente</span><button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button></div>
+  <div class="fg2">
+    <div class="fg" style="grid-column:span 2"><label>Nome</label><input id="cn" value="${c.nome||''}"></div>
+    <div class="fg"><label>Cidade</label><select id="cc"><option value="">—</option>${cO}</select></div>
+    <div class="fg"><label>Status</label><select id="cs"><option value="ativo" ${c.status!=='inativo'?'selected':''}>Ativo</option><option value="inativo" ${c.status==='inativo'?'selected':''}>Inativo</option></select></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    ${id?`<button class="btn bs bdg" onclick="dlC(${id})">Excluir</button>`:''}
+    <button class="btn bp" onclick="svC(${id||'null'})">Salvar</button>
+  </div>`);
+}
+async function svC(id){
+  const n=document.getElementById('cn').value.trim();if(!n){snk('Informe o nome');return}
+  const d={nome:n,cidade_id:document.getElementById('cc').value||null,status:document.getElementById('cs').value,updated_at:new Date().toISOString()};
+  try{id&&id!=='null'?await sb('clientes','PATCH',d,`?id=eq.${id}`):await sb('clientes','POST',d);CL=[];document.querySelector('.ov2')?.remove();snk('Salvo!');pages.clientes()}catch(e){snk('Erro: '+e.message)}
+}
+async function dlC(id){if(!confirm('Excluir?'))return;await sb('clientes','DELETE',null,`?id=eq.${id}`);CL=[];document.querySelector('.ov2')?.remove();snk('Excluído');pages.clientes()}
+
+// ═══ PEDIDOS ═════════════════════════════════════════════════════════════════
+pages.pedidos=async function(f='',sf='',di='',df=''){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo pedido</button>`;
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    let rows=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
+    if(f)rows=rows.filter(r=>r.clientes?.nome?.toLowerCase().includes(f.toLowerCase())||r.numero_pedido?.includes(f));
+    if(sf)rows=rows.filter(r=>r.status===sf);
+    if(di)rows=rows.filter(r=>r.data_pedido>=di);
+    if(df)rows=rows.filter(r=>r.data_pedido<=df);
+    document.getElementById('ct').innerHTML=`
+    <div class="sbar">
+      <input type="text" placeholder="Cliente ou Nº..." id="bp2" value="${f}" oninput="pages.pedidos(this.value,document.getElementById('sp').value,document.getElementById('d1').value,document.getElementById('d2').value)" style="flex:1;min-width:100px">
+      <input type="date" id="d1" value="${di}" onchange="pages.pedidos(document.getElementById('bp2').value,document.getElementById('sp').value,this.value,document.getElementById('d2').value)" style="width:130px">
+      <input type="date" id="d2" value="${df}" onchange="pages.pedidos(document.getElementById('bp2').value,document.getElementById('sp').value,document.getElementById('d1').value,this.value)" style="width:130px">
+      <select id="sp" onchange="pages.pedidos(document.getElementById('bp2').value,this.value,document.getElementById('d1').value,document.getElementById('d2').value)" style="width:auto">
+        <option value="">Todos</option><option>Pendente</option><option>Importado</option><option>Faturado</option><option>Cancelado</option>
+      </select>
+    </div>
+    <div class="card"><div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Tipo</th><th></th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${r.clientes?.nome||'—'}</td><td>${R(r.valor_total)}</td><td><span class="badge ${SBG(r.status)}">${r.status}</span></td><td>${r.tipo==='Programado'?`<span class="badge bgi">📅 ${r.data_entrega?D(r.data_entrega):''}</span>`:'—'}</td><td><button class="btn bs" onclick="fmP(${r.id})">Editar</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro ao carregar pedidos: ${e.message}</div>`}
+};
+
+pages.programados=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo programado</button>`;
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    const rows=await sb('pedidos','GET',null,'?tipo=eq.Programado&order=data_entrega&select=id,numero_pedido,data_pedido,data_entrega,valor_total,status,clientes(nome)');
+    if(!rows.length){document.getElementById('ct').innerHTML='<div class="al ali" style="margin-top:8px">Nenhum pedido programado cadastrado.</div>';return}
+    document.getElementById('ct').innerHTML=`
+    <div class="card"><div class="ov"><table>
+      <thead><tr><th>Cliente</th><th>Nº Pedido</th><th>Pedido em</th><th>Entrega</th><th>Valor</th><th>Status</th><th>Situação</th><th></th></tr></thead>
+      <tbody>${rows.map(r=>{
+        const diff=r.data_entrega?Math.round((new Date(r.data_entrega+'T00:00:00')-new Date())/86400000):null;
+        const active=r.status!=='Cancelado'&&r.status!=='Faturado';
+        const badgeCls=!active?'bg2':diff===null?'bg2':diff<0?'bgd':diff<=3?'bgw':'bgs';
+        const label=!active?r.status:diff===null?'—':diff<0?`${Math.abs(diff)}d atraso`:diff===0?'Hoje':`${diff}d`;
+        return `<tr><td>${r.clientes?.nome||'—'}</td><td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${D(r.data_entrega)||'—'}</td><td>${R(r.valor_total)}</td><td><span class="badge ${SBG(r.status)}">${r.status}</span></td><td><span class="badge ${badgeCls}">${label}</span></td><td><button class="btn bs" onclick="fmP(${r.id})">Editar</button></td></tr>`;
+      }).join('')}
+      </tbody>
+    </table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro ao carregar programados: ${e.message}</div>`}
+};
+async function fmP(id=null){
+  if(!CL.length) CL=await sb('clientes','GET',null,'?order=nome&select=id,codigo,nome,status');
+  const p=id?(await sb('pedidos','GET',null,`?id=eq.${id}&select=*`))[0]:{};
+  // cO removido — usando autocomplete
+  mdl(`<div class="rowb" style="margin-bottom:4px">
+    <span style="font-weight:500">${id?'Editar':'Novo'} pedido</span>
+    <div class="row"><div class="mic" id="mc" onclick="togMic()" title="Voz">🎙️</div><button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button></div>
+  </div>
+  <div class="al ali hide" id="mh">Diga: "cliente NOME, valor VALOR, pedido Nº" — programado: "programado, entrega 15 do 06"</div>
+  <div class="fg2">
+    <div class="fg"><label>Data</label><input type="date" id="pd" value="${p.data_pedido||T()}"></div>
+    <div class="fg"><label>Nº Pedido</label><input id="pn" value="${p.numero_pedido||''}"></div>
+    <div class="fg" style="grid-column:span 2"><label>Cliente</label>
+      <div style="position:relative">
+        <input id="pc-txt" placeholder="Digite para buscar..." autocomplete="off"
+          oninput="filtrarCliente(this.value)"
+          onfocus="filtrarCliente(this.value)"
+          value="${CL.find(x=>x.id==p.cliente_id)?.nome||''}"
+          style="width:100%">
+        <input type="hidden" id="pc" value="${p.cliente_id||''}">
+        <div id="pc-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:.5px solid var(--bo2);border-radius:var(--r);max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
+      </div>
+    </div>
+    <div class="fg"><label>Valor (R$)</label><input type="number" id="pv" value="${p.valor_total||''}" step="0.01"></div>
+    <div class="fg"><label>Status</label><select id="ps">
+      <option ${(!p.status||p.status==='Pendente')?'selected':''}>Pendente</option>
+      <option ${p.status==='Importado'?'selected':''}>Importado</option>
+      <option ${p.status==='Faturado'?'selected':''}>Faturado</option>
+      <option ${p.status==='Cancelado'?'selected':''}>Cancelado</option>
+    </select></div>
+    <div class="fg"><label>Tipo</label><select id="ptp" onchange="document.getElementById('fg-entrega').style.display=this.value==='Programado'?'flex':'none'">
+      <option ${(!p.tipo||p.tipo==='Normal')?'selected':''}>Normal</option>
+      <option ${p.tipo==='Programado'?'selected':''}>Programado</option>
+    </select></div>
+    <div class="fg" id="fg-entrega" style="display:${p.tipo==='Programado'?'flex':'none'}">
+      <label>Data de Entrega</label><input type="date" id="pde" value="${p.data_entrega||''}">
+    </div>
+    <div class="fg" style="grid-column:span 2"><label>Observação</label><input id="po" value="${p.observacao||''}"></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    ${id?`<button class="btn bs bdg" onclick="dlP(${id})">Excluir</button>`:''}
+    <button class="btn bp" onclick="svP(${id||'null'})">Salvar</button>
+  </div>`);
+}
+async function svP(id){
+  const c=document.getElementById('pc').value,v=document.getElementById('pv').value;
+  if(!c||!v){snk('Preencha cliente e valor');return}
+  const tipo=document.getElementById('ptp')?.value||'Normal';
+  const entrega=tipo==='Programado'?(document.getElementById('pde')?.value||null):null;
+  if(tipo==='Programado'&&!entrega){snk('Informe a data de entrega');return}
+  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status:document.getElementById('ps').value,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,updated_at:new Date().toISOString()};
+  try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
+}
+async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
+let micOn=false,rec=null;
+function togMic(){
+  const b=document.getElementById('mc'),h=document.getElementById('mh');
+  if(!micOn){
+    micOn=true;b?.classList.add('rec');h?.classList.remove('hide');
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(SR){rec=new SR();rec.lang='pt-BR';
+      rec.onresult=e=>{
+        const t=e.results[0][0].transcript.toLowerCase();
+        const cm=t.match(/cliente (.+?)(?:,| valor)/),vm=t.match(/valor (\d+[\.,]?\d*)/),nm=t.match(/pedido (\d+)/);
+        const em=t.match(/entrega (\d{1,2}) d[oe] (\d{1,2})/);
+        if(cm){
+          const termo=cm[1].trim().toLowerCase();
+          const found=CL.find(c=>c.nome.toLowerCase().includes(termo));
+          if(found) selecionarCliente(found.id, found.nome);
+        }
+        if(vm)document.getElementById('pv').value=vm[1].replace(',','.');
+        if(nm)document.getElementById('pn').value=nm[1];
+        if(t.includes('programado')){
+          const sel=document.getElementById('ptp');
+          if(sel){sel.value='Programado';const fg=document.getElementById('fg-entrega');if(fg)fg.style.display='flex';}
+        }
+        if(em){
+          const ano=new Date().getFullYear();
+          const mes=String(em[2]).padStart(2,'0'),dia=String(em[1]).padStart(2,'0');
+          const dInput=document.getElementById('pde');
+          if(dInput)dInput.value=`${ano}-${mes}-${dia}`;
+        }
+        snk('"'+t+'"');micOn=false;b?.classList.remove('rec');h?.classList.add('hide');
+      };
+      rec.onerror=()=>{micOn=false;b?.classList.remove('rec');h?.classList.add('hide');snk('Erro no microfone')};
+      rec.start();
+    }else{snk('Use Chrome para voz');micOn=false;b?.classList.remove('rec')}
+  }else{micOn=false;b?.classList.remove('rec');h?.classList.add('hide');rec?.stop()}
+}
+
+// ═══ CIDADES ═════════════════════════════════════════════════════════════════
+pages.cidades=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmCi()">+ Nova</button>`;
+  const rows=await sb('cidades','GET',null,'?order=cidade');
+  document.getElementById('ct').innerHTML=`<div class="card"><div class="ov"><table><thead><tr><th>Cidade</th><th>Estado</th><th></th></tr></thead>
+  <tbody>${rows.map(r=>`<tr><td>${r.cidade}</td><td>${r.estado}</td><td><button class="btn bs" onclick="fmCi(${r.id})">Editar</button></td></tr>`).join('')}</tbody></table></div></div>`;
+};
+async function fmCi(id=null){
+  const c=id?(await sb('cidades','GET',null,`?id=eq.${id}`))[0]:{};
+  mdl(`<div class="rowb" style="margin-bottom:12px"><span style="font-weight:500">${id?'Editar':'Nova'} cidade</span><button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button></div>
+  <div class="fg2">
+    <div class="fg" style="grid-column:span 2"><label>Cidade</label><input id="cin" value="${c.cidade||''}"></div>
+    <div class="fg"><label>UF</label><input id="ciu" value="${c.estado||''}" maxlength="2" style="text-transform:uppercase"></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn bp" onclick="svCi(${id||'null'})">Salvar</button></div>`);
+}
+async function svCi(id){
+  const n=document.getElementById('cin').value.trim(),u=document.getElementById('ciu').value.trim().toUpperCase();
+  if(!n||!u){snk('Preencha os campos');return}
+  try{id&&id!=='null'?await sb('cidades','PATCH',{cidade:n,estado:u},`?id=eq.${id}`):await sb('cidades','POST',{cidade:n,estado:u});CC=[];document.querySelector('.ov2')?.remove();snk('Salvo!');pages.cidades()}catch(e){snk('Erro: '+e.message)}
+}
+
+// ═══ TABELAS ═════════════════════════════════════════════════════════════════
+pages.tabelas=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmT()">+ Nova</button>`;
+  const rows=await sb('tabelas_comissao','GET',null,'?order=codigo');
+  document.getElementById('ct').innerHTML=`<div class="card"><div class="ov"><table><thead><tr><th>Código</th><th>Descrição</th><th>% comissão</th><th></th></tr></thead>
+  <tbody>${rows.map(r=>`<tr><td><span class="chip">${r.codigo}</span></td><td>${r.descricao||'—'}</td><td>${N(r.percentual||r.percentual_max)}%</td><td><button class="btn bs" onclick="fmT(${r.id})">Editar</button></td></tr>`).join('')}</tbody></table></div></div>`;
+};
+async function fmT(id=null){
+  const t=id?(await sb('tabelas_comissao','GET',null,`?id=eq.${id}`))[0]:{};
+  mdl(`<div class="rowb" style="margin-bottom:12px"><span style="font-weight:500">${id?'Editar':'Nova'} tabela</span><button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button></div>
+  <div class="fg2">
+    <div class="fg"><label>Código</label><input id="tc" value="${t.codigo||''}"></div>
+    <div class="fg"><label>Descrição</label><input id="td" value="${t.descricao||''}"></div>
+    <div class="fg" style="grid-column:span 2"><label>% de comissão</label><input type="number" id="tp" value="${t.percentual||t.percentual_max||0}" step="0.5"></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn bp" onclick="svT(${id||'null'})">Salvar</button></div>`);
+}
+async function svT(id){
+  const pct=parseFloat(document.getElementById('tp').value)||0;
+  const d={codigo:document.getElementById('tc').value.trim(),descricao:document.getElementById('td').value.trim(),percentual:pct,percentual_min:pct,percentual_max:pct};
+  if(!d.codigo){snk('Informe o código');return}
+  try{id&&id!=='null'?await sb('tabelas_comissao','PATCH',d,`?id=eq.${id}`):await sb('tabelas_comissao','POST',d);TC=[];document.querySelector('.ov2')?.remove();snk('Salvo!');pages.tabelas()}catch(e){snk('Erro: '+e.message)}
+}
+
+// ═══ PROSPECÇÕES ══════════════════════════════════════════════════════════════
+pages.prospecoes=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmPr()">+ Nova</button>`;
+  try{
+    const rows=await sb('prospeccoes','GET',null,'?select=id,nome,contato,telefone,endereco,cidades(cidade),segmentos(nome)&order=nome');
+    document.getElementById('ct').innerHTML=`<div class="card"><div class="ov"><table>
+      <thead><tr><th>Empresa</th><th>Contato</th><th>Segmento</th><th>Cidade</th><th>Telefone</th><th></th></tr></thead>
+      <tbody>${rows.map(r=>`<tr><td>${r.nome}</td><td>${r.contato||'—'}</td><td>${r.segmentos?.nome||'—'}</td><td>${r.cidades?.cidade||'—'}</td><td>${r.telefone||'—'}</td><td><button class="btn bs" onclick="fmPr(${r.id})">Editar</button></td></tr>`).join('')}</tbody>
+    </table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+async function fmPr(id=null){
+  const p=id?(await sb('prospeccoes','GET',null,`?id=eq.${id}`))[0]:{};
+  const cO=CC.map(x=>`<option value="${x.id}" ${p.cidade_id==x.id?'selected':''}>${x.cidade}</option>`).join('');
+  const sO=SC.map(x=>`<option value="${x.id}" ${p.segmento_id==x.id?'selected':''}>${x.nome}</option>`).join('');
+  mdl(`<div class="rowb" style="margin-bottom:12px"><span style="font-weight:500">${id?'Editar':'Nova'} prospecção</span><button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button></div>
+  <div class="fg2">
+    <div class="fg" style="grid-column:span 2"><label>Nome / Empresa</label><input id="prn" value="${p.nome||''}"></div>
+    <div class="fg" style="grid-column:span 2"><label>Contato (responsável)</label><input id="prc" value="${p.contato||''}" placeholder="Nome da pessoa de contato"></div>
+    <div class="fg"><label>Segmento</label><select id="prs"><option value="">—</option>${sO}</select></div>
+    <div class="fg"><label>Cidade</label><select id="prcd"><option value="">—</option>${cO}</select></div>
+    <div class="fg"><label>Telefone</label><input type="tel" id="prt" value="${p.telefone||''}"></div>
+    <div class="fg" style="grid-column:span 2"><label>Endereço</label><input id="pre" value="${p.endereco||''}"></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    ${id?`<button class="btn bs bdg" onclick="dlPr(${id})">Excluir</button>`:''}
+    <button class="btn bp" onclick="svPr(${id||'null'})">Salvar</button>
+  </div>`);
+}
+async function svPr(id){
+  const n=document.getElementById('prn').value.trim();if(!n){snk('Informe o nome');return}
+  const d={nome:n,contato:document.getElementById('prc').value||null,segmento_id:document.getElementById('prs').value||null,cidade_id:document.getElementById('prcd').value||null,telefone:document.getElementById('prt').value||null,endereco:document.getElementById('pre').value||null};
+  try{id&&id!=='null'?await sb('prospeccoes','PATCH',d,`?id=eq.${id}`):await sb('prospeccoes','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.prospecoes()}catch(e){snk('Erro: '+e.message)}
+}
+async function dlPr(id){if(!confirm('Excluir?'))return;await sb('prospeccoes','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.prospecoes()}
+
+// ═══ COMISSÕES ════════════════════════════════════════════════════════════════
+pages.comissoes=async function(){
+  try{
+    const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+    const s=await sb('saidas','GET',null,`?mes=eq.${mes}&ano=eq.${ano}&order=numero_pedido`);
+    const tV=s.reduce((a,r)=>a+parseFloat(r.valor||0),0),tC=s.reduce((a,r)=>a+parseFloat(r.comissao||0),0);
+    const by={};s.forEach(r=>{const k=r.tabela_codigo||'?';if(!by[k])by[k]={v:0,c:0};by[k].v+=parseFloat(r.valor||0);by[k].c+=parseFloat(r.comissao||0)});
+    document.getElementById('ct').innerHTML=`
+    <div class="g4">
+      <div class="mt"><div class="ml">Total faturado</div><div class="mv">${R(tV)}</div></div>
+      <div class="mt"><div class="ml">Comissão total</div><div class="mv" style="color:#1D9E75">${R(tC)}</div></div>
+      <div class="mt"><div class="ml">Linhas com extra</div><div class="mv">${s.filter(r=>r.extra>0).length}</div></div>
+      <div class="mt"><div class="ml">Tab X (sem com.)</div><div class="mv">${R(s.filter(r=>r.tabela_codigo==='X').reduce((a,r)=>a+parseFloat(r.valor||0),0))}</div></div>
+    </div>
+    <div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">POR TABELA — ${mes}/${ano}</span></div>
+    <div class="ov"><table><thead><tr><th>Tabela</th><th>Faturado</th><th>Comissão</th><th>% efetivo</th></tr></thead>
+    <tbody>${Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>`<tr><td><span class="chip">${k}</span></td><td>${R(v.v)}</td><td>${R(v.c)}</td><td>${v.v>0?N(v.c/v.v*100):'0,00'}%</td></tr>`).join('')}
+    <tr style="font-weight:500"><td>Total</td><td>${R(tV)}</td><td>${R(tC)}</td><td>${tV>0?N(tC/tV*100):'0,00'}%</td></tr>
+    </tbody></table></div></div>
+    <div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">DETALHE</span></div>
+    <div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Cliente</th><th>Valor</th><th>Tab</th><th>%</th><th>Extra</th><th>Comissão</th></tr></thead>
+    <tbody>${s.map(r=>`<tr><td>${r.numero_pedido}</td><td>${r.cliente_nome}</td><td>${R(r.valor)}</td><td><span class="chip">${r.tabela_codigo}</span></td><td>${N(r.percentual)}%</td><td>${r.extra>0?N(r.extra)+'%':'—'}</td><td>${R(r.comissao)}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+
+// ═══ IMPORTAR EM LOTE ════════════════════════════════════════════════════════
+pages.lote=async function(){
+  document.getElementById('ct').innerHTML=`
+  <div class="card">
+    <div style="font-weight:500;margin-bottom:6px">Importar múltiplos PDFs de uma vez</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:14px">Selecione todos os arquivos de entradas e saídas. O sistema detecta o tipo e o mês automaticamente e processa no servidor.</div>
+    <div class="fg2" style="margin-bottom:14px">
+      <div class="fg"><label>Ano de referência (quando não detectado)</label><input type="number" id="lano" value="${new Date().getFullYear()}"></div>
+    </div>
+    <div class="upbox" onclick="document.getElementById('lfiles').click()" style="margin-bottom:12px">
+      <div style="font-size:28px;margin-bottom:8px">📂</div>
+      <div style="font-weight:500;margin-bottom:4px">Clique para selecionar os PDFs</div>
+      <div style="font-size:11px">Pode selecionar vários arquivos de uma vez (Ctrl+Click)</div>
+      <input type="file" id="lfiles" style="display:none" accept=".pdf" multiple onchange="inicLote(this)">
+    </div>
+    <div id="llista"></div>
+    <div id="lbtn" style="display:none;margin-top:12px"><button class="btn bp" onclick="procLote()">▶ Processar todos</button></div>
+  </div>
+  <div id="lres"></div>`;
+};
+
+let loteArqs=[];
+function inicLote(inp){
+  loteArqs=[...inp.files];
+  document.getElementById('llista').innerHTML=loteArqs.map((f,i)=>`
+    <div class="file-item" id="lf-${i}">
+      <span>📄 ${f.name}</span>
+      <span class="fst bg2" id="ls-${i}">Aguardando</span>
+    </div>`).join('');
+  document.getElementById('lbtn').style.display='block';
+}
+
+async function procLote(){
+  const ano=parseInt(document.getElementById('lano').value)||new Date().getFullYear();
+  const btn=document.querySelector('#lbtn button');
+  btn.textContent='⏳ Processando...';btn.disabled=true;
+  const res={entradas:0,saidas:0,clientes:0,divs:0,erros:[]};
+
+  for(let i=0;i<loteArqs.length;i++){
+    const f=loteArqs[i];
+    const st=document.getElementById(`ls-${i}`);
+    st.textContent='Enviando...';st.className='fst bgi';
+    try{
+      const r=await enviarPDF(f,ano);
+      if(r.tipo==='entrada')res.entradas+=r.linhas;
+      else res.saidas+=r.linhas;
+      res.clientes+=r.clientes_novos||0;
+      res.divs+=r.divergencias||0;
+      st.textContent=`✓ ${r.tipo==='entrada'?'Entrada':'Saída'} ${MESES[r.mes-1]}/${r.ano} — ${r.linhas} linhas, ${r.divergencias} div.`;
+      st.className='fst bgs';
+    }catch(e){
+      st.textContent='Erro: '+e.message.substring(0,50);
+      st.className='fst bgd';
+      res.erros.push(f.name+': '+e.message);
+    }
+  }
+
+  btn.textContent='✓ Concluído';
+  document.getElementById('lres').innerHTML=`
+  <div class="card">
+    <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">RESULTADO DO PROCESSAMENTO</span></div>
+    <div class="g4" style="margin-bottom:12px">
+      <div class="mt"><div class="ml">Linhas de entrada</div><div class="mv">${res.entradas}</div></div>
+      <div class="mt"><div class="ml">Linhas de saída</div><div class="mv">${res.saidas}</div></div>
+      <div class="mt"><div class="ml">Clientes novos</div><div class="mv" style="color:#1D9E75">${res.clientes}</div></div>
+      <div class="mt"><div class="ml">Divergências</div><div class="mv" style="color:${res.divs>0?'var(--txw)':'#1D9E75'}">${res.divs}</div></div>
+    </div>
+    ${res.divs>0?`<div class="al alw">${res.divs} divergência(s) — <a href="#" onclick="go('divergencias');return false" style="color:inherit;font-weight:500">ver relatório</a></div>`:'<div class="al als">Processamento concluído!</div>'}
+    ${res.clientes>0?`<div class="al ali">${res.clientes} clientes novos cadastrados. <a href="#" onclick="go('clientes');return false" style="color:inherit;font-weight:500">Ver clientes</a></div>`:''}
+    ${res.erros.length?`<div class="al alr">${res.erros.join('<br>')}</div>`:''}
+  </div>`;
+}
+
+// ═══ ENTRADAS PDF (individual) ════════════════════════════════════════════════
+pages.entradas=async function(){
+  const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+  document.getElementById('ct').innerHTML=`
+  <div class="tabs"><div class="tab on" id="tab-ei" onclick="stab('e','ei')">Importar PDF</div><div class="tab" id="tab-er" onclick="stab('e','er')">Resultado</div></div>
+  <div id="tp-ei"><div class="card">
+    <div style="font-weight:500;margin-bottom:8px">Relatório GR de Entradas</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">O mês e ano são detectados automaticamente pelo PDF.</div>
+    <div class="fg2" style="margin-bottom:10px">
+      <div class="fg"><label>Ano (se não detectado)</label><input type="number" id="eano" value="${ano}"></div>
+    </div>
+    <div class="upbox" onclick="document.getElementById('fe').click()">
+      <div style="font-size:28px;margin-bottom:8px">📄</div>
+      <div style="font-weight:500;margin-bottom:4px">Clique para importar PDF de entradas</div>
+      <div style="font-size:11px">Processado no servidor — suporta todos os formatos</div>
+      <input type="file" id="fe" style="display:none" accept=".pdf" onchange="procE(this)">
+    </div>
+    <div id="eprog" style="margin-top:10px"></div>
+  </div></div>
+  <div id="tp-er" class="hide"><div id="eres"></div></div>`;
+};
+async function procE(inp){
+  const file=inp.files[0];if(!file)return;
+  const prog=document.getElementById('eprog');
+  prog.innerHTML='<div class="al ali">⏳ Enviando para processamento...</div>';
+  try{
+    const ano=parseInt(document.getElementById('eano').value);
+    const res=await enviarPDF(file,ano);
+    prog.innerHTML=`<div class="al als">✅ ${res.linhas} linhas importadas (${MESES[res.mes-1]}/${res.ano}). ${res.clientes_novos||0} clientes novos. ${res.divergencias} divergência(s).</div>`;
+    const linhas=await sb('entradas','GET',null,`?mes=eq.${res.mes}&ano=eq.${res.ano}&order=numero_pedido`);
+    const divs=await sb('divergencias','GET',null,`?tipo=eq.entrada&mes=eq.${res.mes}&ano=eq.${res.ano}`);
+    stab('e','er');rEnt(linhas,divs);
+  }catch(e){prog.innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+}
+function rEnt(ls,dv){
+  const dn=new Set(dv.map(d=>d.numero_pedido));
+  document.getElementById('eres').innerHTML=`
+  ${dv.length?`<div class="al alw">${dv.length} divergência(s)</div>`:`<div class="al als">Nenhuma divergência!</div>`}
+  <div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">CONFERÊNCIA ENTRADAS</span><div class="row"><span class="badge bgs">${ls.length-dv.length} OK</span><span class="badge bgd" style="margin-left:4px">${dv.length} div.</span></div></div>
+  <div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Tab</th><th>%</th><th>Valor</th><th>Status</th></tr></thead>
+  <tbody>${ls.map(l=>`<tr class="${dn.has(l.numero_pedido)?'dr':''}"><td>${l.numero_pedido}</td><td>${D(l.data_pedido)}</td><td>${l.cliente_nome}</td><td><span class="chip">${l.tabela_codigo}</span></td><td>${N(l.percentual)}%</td><td>${R(l.valor)}</td><td>${l.eh_estorno?'<span class="badge bgd">Estorno</span>':dn.has(l.numero_pedido)?'<span class="badge bgw">Divergente</span>':'<span class="badge bgs">OK</span>'}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+
+// ═══ SAÍDAS PDF (individual) ══════════════════════════════════════════════════
+pages.saidas=async function(){
+  const ano=new Date().getFullYear();
+  document.getElementById('ct').innerHTML=`
+  <div class="tabs"><div class="tab on" id="tab-si" onclick="stab('s','si')">Importar PDF</div><div class="tab" id="tab-sr" onclick="stab('s','sr')">Resultado</div></div>
+  <div id="tp-si"><div class="card">
+    <div style="font-weight:500;margin-bottom:8px">Relatório de Saídas</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">O mês e ano são detectados automaticamente pelo PDF.</div>
+    <div class="fg2" style="margin-bottom:10px">
+      <div class="fg"><label>Ano (se não detectado)</label><input type="number" id="sano" value="${ano}"></div>
+    </div>
+    <div class="upbox" onclick="document.getElementById('fs').click()">
+      <div style="font-size:28px;margin-bottom:8px">📄</div>
+      <div style="font-weight:500;margin-bottom:4px">Clique para importar PDF de saídas</div>
+      <div style="font-size:11px">Comissão = Valor × (% + Extra) / 100</div>
+      <input type="file" id="fs" style="display:none" accept=".pdf" onchange="procS(this)">
+    </div>
+    <div id="sprog" style="margin-top:10px"></div>
+  </div></div>
+  <div id="tp-sr" class="hide"><div id="sres"></div></div>`;
+};
+async function procS(inp){
+  const file=inp.files[0];if(!file)return;
+  const prog=document.getElementById('sprog');
+  prog.innerHTML='<div class="al ali">⏳ Enviando para processamento...</div>';
+  try{
+    const ano=parseInt(document.getElementById('sano').value);
+    const res=await enviarPDF(file,ano);
+    prog.innerHTML=`<div class="al als">✅ ${res.linhas} linhas importadas (${MESES[res.mes-1]}/${res.ano}). ${res.clientes_novos||0} clientes novos. ${res.divergencias} divergência(s).</div>`;
+    const linhas=await sb('saidas','GET',null,`?mes=eq.${res.mes}&ano=eq.${res.ano}&order=numero_pedido`);
+    const divs=await sb('divergencias','GET',null,`?tipo=eq.saida&mes=eq.${res.mes}&ano=eq.${res.ano}`);
+    stab('s','sr');rSai(linhas,divs);
+  }catch(e){prog.innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+}
+function rSai(ls,dv){
+  const dn=new Set(dv.map(d=>d.numero_pedido));
+  const tV=ls.reduce((s,r)=>s+parseFloat(r.valor||0),0);
+  const tC=ls.reduce((s,r)=>s+parseFloat(r.comissao||0),0);
+  const tCal=ls.reduce((s,r)=>s+parseFloat(r.valor||0)*(parseFloat(r.percentual||0)+parseFloat(r.extra||0))/100,0);
+  document.getElementById('sres').innerHTML=`
+  ${dv.length?`<div class="al alw">${dv.length} divergência(s)</div>`:`<div class="al als">Valores conferidos!</div>`}
+  <div class="g4" style="margin-bottom:12px">
+    <div class="mt"><div class="ml">Faturado</div><div class="mv">${R(tV)}</div></div>
+    <div class="mt"><div class="ml">Comissão PDF</div><div class="mv">${R(tC)}</div></div>
+    <div class="mt"><div class="ml">Calculado</div><div class="mv">${R(tCal)}</div></div>
+    <div class="mt"><div class="ml">Diferença</div><div class="mv" style="color:${Math.abs(tC-tCal)>1?'var(--txd)':'#1D9E75'}">${R(Math.abs(tC-tCal))}</div></div>
+  </div>
+  <div class="card"><div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Cliente</th><th>Valor</th><th>Tab</th><th>%</th><th>Extra</th><th>Com. PDF</th><th>Calculado</th><th></th></tr></thead>
+  <tbody>${ls.map(r=>{const cal=parseFloat(r.valor||0)*(parseFloat(r.percentual||0)+parseFloat(r.extra||0))/100,ok=Math.abs(cal-parseFloat(r.comissao||0))<0.06;return`<tr class="${!ok&&dn.has(r.numero_pedido)?'dr':''}"><td>${r.numero_pedido}</td><td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.cliente_nome}</td><td>${R(r.valor)}</td><td><span class="chip">${r.tabela_codigo}</span></td><td>${N(r.percentual)}%</td><td>${parseFloat(r.extra||0)>0?N(r.extra)+'%':'—'}</td><td>${R(r.comissao)}</td><td>${R(cal)}</td><td>${r.tabela_codigo==='X'?'<span class="badge bg2">Sem com.</span>':ok?'<span class="badge bgs">OK</span>':'<span class="badge bgw">Div.</span>'}</td></tr>`}).join('')}
+  </tbody></table></div></div>`;
+}
+
+// ═══ DIVERGÊNCIAS POR MÊS ════════════════════════════════════════════════════
+pages.divergencias=async function(){
+  try{
+    const divs=await sb('divergencias','GET',null,'?order=ano.desc,mes.desc,tipo&select=*');
+    if(!divs.length){document.getElementById('ct').innerHTML='<div class="al als">Nenhuma divergência registrada.</div>';return}
+    const grupos={};
+    divs.forEach(d=>{const k=`${d.ano}-${String(d.mes).padStart(2,'0')}`;if(!grupos[k])grupos[k]={ano:d.ano,mes:d.mes,itens:[]};grupos[k].itens.push(d)});
+    const pend=divs.filter(d=>!d.resolvida).length;
+    document.getElementById('ct').innerHTML=`
+    <div class="g4" style="margin-bottom:14px">
+      <div class="mt"><div class="ml">Total</div><div class="mv">${divs.length}</div></div>
+      <div class="mt"><div class="ml">Pendentes</div><div class="mv" style="color:var(--txw)">${pend}</div></div>
+      <div class="mt"><div class="ml">Resolvidas</div><div class="mv" style="color:#1D9E75">${divs.length-pend}</div></div>
+      <div class="mt"><div class="ml">Meses</div><div class="mv">${Object.keys(grupos).length}</div></div>
+    </div>
+    ${Object.entries(grupos).map(([k,g])=>`
+    <div class="card">
+      <div class="rowb"><span style="font-weight:500">${MESES[g.mes-1]} / ${g.ano}</span>
+      <div class="row">
+        <span class="badge bgi">${g.itens.filter(x=>x.tipo==='entrada').length} entrada</span>
+        <span class="badge bgw">${g.itens.filter(x=>x.tipo==='saida').length} saída</span>
+      </div></div>
+      <div class="ov"><table><thead><tr><th>Tipo</th><th>Nº Pedido</th><th>Campo</th><th>Valor PDF</th><th>Valor Sistema</th><th>Status</th><th></th></tr></thead>
+      <tbody>${g.itens.map(d=>`<tr class="${d.resolvida?'':'dr'}">
+        <td><span class="badge ${d.tipo==='entrada'?'bgi':'bgw'}">${d.tipo}</span></td>
+        <td>${d.numero_pedido}</td><td>${d.campo_divergente}</td>
+        <td>${d.valor_pdf}</td><td>${d.valor_sistema}</td>
+        <td>${d.resolvida?'<span class="badge bgs">Resolvida</span>':'<span class="badge bgw">Pendente</span>'}</td>
+        <td>${!d.resolvida?`<button class="btn bs" onclick="resDiv(${d.id})">Resolver</button>`:''}</td>
+      </tr>`).join('')}</tbody></table></div>
+    </div>`).join('')}`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+async function resDiv(id){await sb('divergencias','PATCH',{resolvida:true},`?id=eq.${id}`);snk('Resolvida!');pages.divergencias()}
+
+// ═══ RELATÓRIO ANUAL POR CLIENTE ══════════════════════════════════════════════
+pages['rel-anual']=async function(){
+  document.getElementById('ct').innerHTML=`
+  <div class="card">
+    <div style="font-weight:500;margin-bottom:12px">Relatório anual de compras por cliente</div>
+    <div class="g3" style="margin-bottom:12px">
+      <div class="fg"><label>Ano</label><select id="raan">${[2026,2025,2024,2023,2022].map(y=>`<option ${y===new Date().getFullYear()?'selected':''}>${y}</option>`).join('')}</select></div>
+      <div class="fg"><label>Ordenar por</label><select id="raord"><option value="total">Maior valor</option><option value="qtd">Mais pedidos</option><option value="nome">Nome A-Z</option></select></div>
+      <div class="fg"><label>Mostrar</label><select id="ratop"><option value="0">Todos</option><option value="10">Top 10</option><option value="20">Top 20</option><option value="50">Top 50</option></select></div>
+    </div>
+    <button class="btn bp" onclick="gerarAnual()">Gerar relatório</button>
+  </div>
+  <div id="rares"></div>`;
+};
+async function gerarAnual(){
+  const ano=parseInt(document.getElementById('raan').value);
+  const ord=document.getElementById('raord').value;
+  const top=parseInt(document.getElementById('ratop').value);
+  const el=document.getElementById('rares');
+  el.innerHTML='<div class="ld">Calculando...</div>';
+  try{
+    // 2026+: usar entradas como vendas; anteriores: usar saídas
+    const usarEntradas = ano >= 2026;
+    const saidas = usarEntradas
+      ? await sb('entradas','GET',null,`?ano=eq.${ano}&select=cliente_nome,valor,mes&eh_estorno=eq.false`)
+      : await sb('saidas','GET',null,`?ano=eq.${ano}&select=cliente_nome,valor,comissao,mes`);
+    if(!saidas.length){el.innerHTML=`<div class="al alw">Nenhum dado para ${ano}.</div>`;return}
+    const by={};
+    saidas.forEach(s=>{const n=s.cliente_nome?.trim()||'—';if(!by[n])by[n]={nome:n,total:0,comissao:0,meses:new Set(),qtd:0};by[n].total+=parseFloat(s.valor||0);by[n].comissao+=parseFloat(s.comissao||0);by[n].meses.add(s.mes);by[n].qtd++});
+    let lista=Object.values(by).map(c=>({...c,meses:c.meses.size}));
+    if(ord==='total')lista.sort((a,b)=>b.total-a.total);
+    else if(ord==='qtd')lista.sort((a,b)=>b.qtd-a.qtd);
+    else lista.sort((a,b)=>a.nome.localeCompare(b.nome));
+    if(top>0)lista=lista.slice(0,top);
+    const tTotal=lista.reduce((s,c)=>s+c.total,0);
+    const tCom=lista.reduce((s,c)=>s+c.comissao,0);
+    const max=lista[0]?.total||1;
+    el.innerHTML=`
+    <div class="g4" style="margin-bottom:14px">
+      <div class="mt"><div class="ml">Clientes</div><div class="mv">${lista.length}</div></div>
+      <div class="mt"><div class="ml">Total faturado ${ano}</div><div class="mv">${R(tTotal)}</div></div>
+      <div class="mt"><div class="ml">Comissão total</div><div class="mv" style="color:#1D9E75">${R(tCom)}</div></div>
+      <div class="mt"><div class="ml">Ticket médio</div><div class="mv">${R(tTotal/lista.length)}</div></div>
+    </div>
+    <div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">RANKING — ${ano}${top>0?' TOP '+top:''}</span></div>
+    <div class="ov"><table><thead><tr><th>#</th><th>Cliente</th><th>Meses</th><th>Linhas</th><th>Comissão</th><th>Total</th><th>Part.</th></tr></thead>
+    <tbody>${lista.map((c,i)=>`<tr>
+      <td style="color:var(--tx2);font-weight:500">${i+1}</td>
+      <td style="font-weight:${i<3?'500':'400'}">${i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':''}${c.nome}</td>
+      <td>${c.meses}</td><td>${c.qtd}</td><td>${R(c.comissao)}</td><td style="font-weight:500">${R(c.total)}</td>
+      <td><div class="row" style="gap:6px"><div class="rank-bar" style="width:${Math.round(c.total/max*80)}px"></div><span style="font-size:11px;color:var(--tx2)">${N(c.total/tTotal*100)}%</span></div></td>
+    </tr>`).join('')}
+    <tr style="font-weight:500"><td colspan="4">Total</td><td>${R(tCom)}</td><td>${R(tTotal)}</td><td>100%</td></tr>
+    </tbody></table></div></div>`;
+  }catch(e){el.innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+
+// ═══ RELATÓRIOS ═══════════════════════════════════════════════════════════════
+pages.relatorios=async function(){
+  document.getElementById('ct').innerHTML=`
+  <div class="g2">
+    <div class="card"><div style="font-weight:500;margin-bottom:8px">Clientes por status</div><button class="btn bp bs" onclick="rSt()">Gerar</button></div>
+    <div class="card"><div style="font-weight:500;margin-bottom:6px">Sem compra desde...</div><input type="date" id="rdt" value="${F1()}" style="margin:8px 0"><button class="btn bp bs" onclick="rIn()">Gerar</button></div>
+    <div class="card"><div style="font-weight:500;margin-bottom:6px">Total por tabela</div><div class="row" style="margin:8px 0;gap:6px"><input type="date" id="rt1" value="${F1()}"><input type="date" id="rt2" value="${T()}"></div><button class="btn bp bs" onclick="rTb()">Gerar</button></div>
+    <div class="card"><div style="font-weight:500;margin-bottom:6px">Pedidos por cidade</div><div class="row" style="margin:8px 0;gap:6px"><input type="date" id="rc1" value="${F1()}"><input type="date" id="rc2" value="${T()}"></div><button class="btn bp bs" onclick="rCd()">Gerar</button></div>
+    <div class="card"><div style="font-weight:500;margin-bottom:6px">Pedidos por valor</div><div class="row" style="margin:8px 0;gap:6px"><input type="date" id="rv1" value="${F1()}"><input type="date" id="rv2" value="${T()}"></div><button class="btn bp bs" onclick="rVl()">Gerar</button></div>
+    <div class="card"><div style="font-weight:500;margin-bottom:6px">Status de pedidos</div><div class="row" style="margin:8px 0;gap:6px"><input type="date" id="rs1" value="${F1()}"><input type="date" id="rs2" value="${T()}"></div><button class="btn bp bs" onclick="rPs()">Gerar</button></div>
+    <div class="card" style="grid-column:span 2"><div style="font-weight:500;margin-bottom:6px">Vendas por cliente</div><div class="row" style="margin:8px 0;gap:6px"><input type="date" id="rcl1" value="${F1()}"><input type="date" id="rcl2" value="${T()}"><button class="btn bp bs" onclick="rCl()">Gerar</button></div></div>
+  </div><div id="rr"></div>`;
+};
+const sRR=h=>document.getElementById('rr').innerHTML=h;
+async function rSt(){const r=await sb('clientes','GET',null,'?select=status');sRR(`<div class="card"><div class="g2"><div class="mt"><div class="ml">Ativos</div><div class="mv" style="color:#1D9E75">${r.filter(x=>x.status==='ativo').length}</div></div><div class="mt"><div class="ml">Inativos</div><div class="mv" style="color:var(--txd)">${r.filter(x=>x.status==='inativo').length}</div></div></div></div>`)}
+async function rIn(){
+  const dt=document.getElementById('rdt').value;
+  const p=await sb('pedidos','GET',null,'?select=cliente_id,data_pedido&order=data_pedido.desc');
+  const u={};p.forEach(x=>{if(!u[x.cliente_id])u[x.cliente_id]=x.data_pedido});
+  const c=await sb('clientes','GET',null,'?select=id,nome,cidades(cidade)&status=eq.ativo&order=nome');
+  const s=c.filter(x=>!u[x.id]||u[x.id]<dt);
+  sRR(`<div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">SEM COMPRA DESDE ${D(dt)}</span><span class="badge bgd">${s.length}</span></div><div class="ov"><table><thead><tr><th>Cliente</th><th>Cidade</th><th>Último pedido</th></tr></thead><tbody>${s.map(x=>`<tr><td>${x.nome}</td><td>${x.cidades?.cidade||'—'}</td><td>${D(u[x.id])||'Nunca'}</td></tr>`).join('')}</tbody></table></div></div>`);
+}
+async function rTb(){
+  const di=document.getElementById('rt1').value,df=document.getElementById('rt2').value;
+  const r=await sb('entradas','GET',null,`?data_pedido=gte.${di}&data_pedido=lte.${df}&select=tabela_codigo,valor`);
+  const by={};r.forEach(x=>{if(!by[x.tabela_codigo])by[x.tabela_codigo]={v:0,q:0};by[x.tabela_codigo].v+=parseFloat(x.valor||0);by[x.tabela_codigo].q++});
+  sRR(`<div class="card"><div class="ov"><table><thead><tr><th>Tabela</th><th>Qtd</th><th>Total</th></tr></thead><tbody>${Object.entries(by).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>`<tr><td><span class="chip">${k}</span></td><td>${v.q}</td><td>${R(v.v)}</td></tr>`).join('')}</tbody></table></div></div>`);
+}
+async function rCd(){
+  const di=document.getElementById('rc1').value,df=document.getElementById('rc2').value;
+  const r=await sb('pedidos','GET',null,`?data_pedido=gte.${di}&data_pedido=lte.${df}&select=valor_total,clientes(nome,cidades(cidade))`);
+  const by={};r.forEach(x=>{const c=x.clientes?.cidades?.cidade||'—';if(!by[c])by[c]={v:0,q:0,cs:new Set()};by[c].v+=parseFloat(x.valor_total||0);by[c].q++;by[c].cs.add(x.clientes?.nome)});
+  sRR(`<div class="card"><div class="ov"><table><thead><tr><th>Cidade</th><th>Clientes</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${Object.entries(by).sort((a,b)=>b[1].v-a[1].v).map(([k,v])=>`<tr><td>${k}</td><td>${v.cs.size}</td><td>${v.q}</td><td>${R(v.v)}</td></tr>`).join('')}</tbody></table></div></div>`);
+}
+async function rVl(){
+  const di=document.getElementById('rv1').value,df=document.getElementById('rv2').value;
+  const r=await sb('pedidos','GET',null,`?data_pedido=gte.${di}&data_pedido=lte.${df}&select=numero_pedido,data_pedido,valor_total,clientes(nome)&order=valor_total.desc`);
+  const t=r.reduce((s,x)=>s+parseFloat(x.valor_total||0),0);
+  sRR(`<div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">PEDIDOS POR VALOR</span><span style="font-weight:500">${R(t)}</span></div><div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th></tr></thead><tbody>${r.map(x=>`<tr><td>${x.numero_pedido||'—'}</td><td>${D(x.data_pedido)}</td><td>${x.clientes?.nome||'—'}</td><td>${R(x.valor_total)}</td></tr>`).join('')}<tr style="font-weight:500"><td colspan="3">Total</td><td>${R(t)}</td></tr></tbody></table></div></div>`);
+}
+async function rPs(){
+  const di=document.getElementById('rs1').value,df=document.getElementById('rs2').value;
+  const r=await sb('pedidos','GET',null,`?data_pedido=gte.${di}&data_pedido=lte.${df}&select=status,valor_total`);
+  const by={};r.forEach(x=>{if(!by[x.status])by[x.status]={q:0,v:0};by[x.status].q++;by[x.status].v+=parseFloat(x.valor_total||0)});
+  sRR(`<div class="card"><div class="ov"><table><thead><tr><th>Status</th><th>Qtd</th><th>Total</th></tr></thead><tbody>${Object.entries(by).map(([k,v])=>`<tr><td><span class="badge ${SBG(k)}">${k}</span></td><td>${v.q}</td><td>${R(v.v)}</td></tr>`).join('')}</tbody></table></div></div>`);
+}
+async function rCl(){
+  const di=document.getElementById('rcl1').value,df=document.getElementById('rcl2').value;
+  const r=await sb('pedidos','GET',null,`?data_pedido=gte.${di}&data_pedido=lte.${df}&select=valor_total,clientes(nome)`);
+  const by={};r.forEach(x=>{const n=x.clientes?.nome||'—';if(!by[n])by[n]={q:0,v:0};by[n].q++;by[n].v+=parseFloat(x.valor_total||0)});
+  const s=Object.entries(by).sort((a,b)=>b[1].v-a[1].v),t=s.reduce((a,[,v])=>a+v.v,0);
+  sRR(`<div class="card"><div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">VENDAS POR CLIENTE</span><span style="font-weight:500">${R(t)}</span></div><div class="ov"><table><thead><tr><th>Cliente</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>${s.map(([k,v])=>`<tr><td>${k}</td><td>${v.q}</td><td>${R(v.v)}</td></tr>`).join('')}<tr style="font-weight:500"><td colspan="2">Total</td><td>${R(t)}</td></tr></tbody></table></div></div>`);
+}
+
+
+// ── Download do script Python ──────────────────────────────────────────────
+function downloadScript(){
+  const b64='IiIiCkdSIFZFTkRBUyAtIEltcG9ydGFkb3IgZGUgUERGcwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQpQcm9jZXNzYSBQREZzIGRlIEVudHJhZGFzIGUgU2HDrWRhcyBlIGVudmlhIHBhcmEgbyBTdXBhYmFzZS4KCklOU1RBTEHDh8ODTyAoYXBlbmFzIHVtYSB2ZXopOgogIHBpcCBpbnN0YWxsIHBkZnBsdW1iZXIgcmVxdWVzdHMKCkNPTU8gVVNBUjoKICAxLiBDb2xvcXVlIG9zIFBERnMgbnVtYSBwYXN0YSAoZXg6IEM6L3BkZnMpCiAgMi4gRXhlY3V0ZTogcHl0aG9uIGltcG9ydGFyX3BkZnMucHkKICAzLiBJbmZvcm1lIGEgcGFzdGEgcXVhbmRvIHNvbGljaXRhZG8KCiIiIgoKaW1wb3J0IG9zCmltcG9ydCByZQppbXBvcnQgc3lzCmltcG9ydCBqc29uCmltcG9ydCByZXF1ZXN0cwppbXBvcnQgcGRmcGx1bWJlcgpmcm9tIGRhdGV0aW1lIGltcG9ydCBkYXRldGltZQoKIyDilIDilIDilIAgQ09ORklHVVJBw4fDg08g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAClNVUEFCQVNFX1VSTCA9ICJodHRwczovL2xicmhja2dldWlneGxwYW91eWZmLnN1cGFiYXNlLmNvIgpTVVBBQkFTRV9LRVkgPSAiZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW14aWNtaGphMmRsZFdsbmVHeHdZVzkxZVdabUlpd2ljbTlzWlNJNkltRnViMjRpTENKcFlYUWlPakUzTnpZM09URTFOemNzSW1WNGNDSTZNakE1TWpNMk56VTNOMzAuNzdvRjFqaU1jWUZCVnlSQXZtUThPV2RlTnotdm1sVkwtQTFIZFhMVW1MQSIKCkhFQURFUlMgPSB7CiAgICAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLAogICAgImFwaWtleSI6IFNVUEFCQVNFX0tFWSwKICAgICJBdXRob3JpemF0aW9uIjogZiJCZWFyZXIge1NVUEFCQVNFX0tFWX0iLAogICAgIlByZWZlciI6ICJyZXR1cm49cmVwcmVzZW50YXRpb24iCn0KCiMg4pSA4pSA4pSAIFNVUEFCQVNFIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApkZWYgc2JfZ2V0KHRhYmVsYSwgcXVlcnk9IiIpOgogICAgciA9IHJlcXVlc3RzLmdldChmIntTVVBBQkFTRV9VUkx9L3Jlc3QvdjEve3RhYmVsYX17cXVlcnl9IiwgaGVhZGVycz1IRUFERVJTKQogICAgci5yYWlzZV9mb3Jfc3RhdHVzKCkKICAgIHJldHVybiByLmpzb24oKQoKZGVmIHNiX3Bvc3QodGFiZWxhLCBkYXRhKToKICAgIGlmIGlzaW5zdGFuY2UoZGF0YSwgbGlzdCk6CiAgICAgICAgIyBJbnNlcmlyIGVtIGxvdGVzIGRlIDEwMAogICAgICAgIGZvciBpIGluIHJhbmdlKDAsIGxlbihkYXRhKSwgMTAwKToKICAgICAgICAgICAgbG90ZSA9IGRhdGFbaTppKzEwMF0KICAgICAgICAgICAgciA9IHJlcXVlc3RzLnBvc3QoZiJ7U1VQQUJBU0VfVVJMfS9yZXN0L3YxL3t0YWJlbGF9IiwgaGVhZGVycz1IRUFERVJTLCBqc29uPWxvdGUpCiAgICAgICAgICAgIGlmIG5vdCByLm9rOgogICAgICAgICAgICAgICAgcHJpbnQoZiIgIOKaoO+4jyAgRXJybyBhbyBpbnNlcmlyIGxvdGU6IHtyLnRleHRbOjIwMF19IikKICAgIGVsc2U6CiAgICAgICAgciA9IHJlcXVlc3RzLnBvc3QoZiJ7U1VQQUJBU0VfVVJMfS9yZXN0L3YxL3t0YWJlbGF9IiwgaGVhZGVycz1IRUFERVJTLCBqc29uPWRhdGEpCiAgICAgICAgaWYgbm90IHIub2s6CiAgICAgICAgICAgIHByaW50KGYiICDimqDvuI8gIEVycm86IHtyLnRleHRbOjIwMF19IikKCmRlZiBzYl9kZWxldGUodGFiZWxhLCBxdWVyeSk6CiAgICByID0gcmVxdWVzdHMuZGVsZXRlKGYie1NVUEFCQVNFX1VSTH0vcmVzdC92MS97dGFiZWxhfXtxdWVyeX0iLCBoZWFkZXJzPUhFQURFUlMpCiAgICBpZiBub3Qgci5vazoKICAgICAgICBwcmludChmIiAg4pqg77iPICBFcnJvIGFvIGRlbGV0YXI6IHtyLnRleHRbOjIwMF19IikKCmRlZiBzYl9wYXRjaCh0YWJlbGEsIGRhdGEsIHF1ZXJ5KToKICAgIHIgPSByZXF1ZXN0cy5wYXRjaChmIntTVVBBQkFTRV9VUkx9L3Jlc3QvdjEve3RhYmVsYX17cXVlcnl9IiwgaGVhZGVycz1IRUFERVJTLCBqc29uPWRhdGEpCiAgICBpZiBub3Qgci5vazoKICAgICAgICBwcmludChmIiAg4pqg77iPICBFcnJvIGFvIGF0dWFsaXphcjoge3IudGV4dFs6MjAwXX0iKQoKIyDilIDilIDilIAgRVhUUkFJUiBURVhUTyBETyBQREYg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmRlZiBleHRyYWlyX3RleHRvKHBhdGgpOgogICAgdGV4dG8gPSAiIgogICAgd2l0aCBwZGZwbHVtYmVyLm9wZW4ocGF0aCkgYXMgcGRmOgogICAgICAgIGZvciBwYWdlIGluIHBkZi5wYWdlczoKICAgICAgICAgICAgdCA9IHBhZ2UuZXh0cmFjdF90ZXh0KCkKICAgICAgICAgICAgaWYgdDoKICAgICAgICAgICAgICAgIHRleHRvICs9IHQgKyAiXG4iCiAgICByZXR1cm4gdGV4dG8KCiMg4pSA4pSA4pSAIExJTVBBUiBMSU5IQSAoY29ycmlnaXIgbsO6bWVyb3MgZnJhZ21lbnRhZG9zKSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIGxpbXBhcl9saW5oYShsaW5lKToKICAgICMgQ29ycmlnaXIgIjIgLjU1NCwwMSIg4oaSICIyLjU1NCwwMSIKICAgIGxpbmUgPSByZS5zdWIocicoXGQpXHMrXC4oXGQpJywgcidcMS5cMicsIGxpbmUpCiAgICAjIENvcnJpZ2lyICIxIDE0LDkzIiDihpIgIjExNCw5MyIgKG7Dum1lcm8gZnJhZ21lbnRhZG8gYW50ZXMgZGUgdsOtcmd1bGEpCiAgICBsaW5lID0gcmUuc3ViKHInXGJSXCRccysoXGQpXHMrKFxkK1suLF1cZHsyfSknLCBsYW1iZGEgbTogZidSJCB7bS5ncm91cCgxKX17bS5ncm91cCgyKX0nLCBsaW5lKQogICAgIyBDb3JyaWdpciAiUiQgNiA1LDE5IiDihpIgIlIkIDY1LDE5IgogICAgbGluZSA9IHJlLnN1YihyJ1JcJFxzKyhcZClccysoXGQrKSwoXGR7Mn0pJywgbGFtYmRhIG06IGYnUiQge20uZ3JvdXAoMSl9e20uZ3JvdXAoMil9LHttLmdyb3VwKDMpfScsIGxpbmUpCiAgICAjIENvcnJpZ2lyICJSJCAsMjEiIOKGkiAiUiQgMCwyMSIgZSAiUiQgMiAsMjEiIOKGkiAiUiQgMiwyMSIKICAgIGxpbmUgPSByZS5zdWIocicoXGQpXHMrLChcZHsyfSknLCByJ1wxLFwyJywgbGluZSkKICAgIHJldHVybiBsaW5lLnN0cmlwKCkKCmRlZiBwYXJzZV92YWxvcihzKToKICAgICIiIkNvbnZlcnRlIHN0cmluZyBkZSB2YWxvciBicmFzaWxlaXJvIHBhcmEgZmxvYXQuIiIiCiAgICBzID0gcy5zdHJpcCgpLnJlcGxhY2UoJy4nLCAnJykucmVwbGFjZSgnLCcsICcuJykKICAgIHRyeToKICAgICAgICByZXR1cm4gZmxvYXQocykKICAgIGV4Y2VwdDoKICAgICAgICByZXR1cm4gMC4wCgojIOKUgOKUgOKUgCBERVRFQ1RBUiBUSVBPIEUgTcOKUy9BTk8g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmRlZiBkZXRlY3Rhcl9pbmZvKHRleHRvKToKICAgIHRpcG8gPSAiZW50cmFkYSIgaWYgKCJSZWxhdMOzcmlvIGRlIEVudHJhZGFzIiBpbiB0ZXh0byBvciAiRGF0YSBQZWRpZG8iIGluIHRleHRvKSBlbHNlICJzYWlkYSIKICAgIG1lcyA9IDAKICAgIGFubyA9IGRhdGV0aW1lLm5vdygpLnllYXIKCiAgICBtID0gcmUuc2VhcmNoKHInTcOqc1s6XHNdKyhcZHsxLDJ9KScsIHRleHRvLCByZS5JKQogICAgaWYgbToKICAgICAgICBtZXMgPSBpbnQobS5ncm91cCgxKSkKICAgIG0gPSByZS5zZWFyY2gocidBbm9bOlxzXSsoXGR7NH0pJywgdGV4dG8sIHJlLkkpCiAgICBpZiBtOgogICAgICAgIGFubyA9IGludChtLmdyb3VwKDEpKQoKICAgIGlmIG1lcyA9PSAwOgogICAgICAgIG0gPSByZS5zZWFyY2gocicoXGR7Mn0pLyhcZHsyfSkvKFxkezR9KScsIHRleHRvKQogICAgICAgIGlmIG06CiAgICAgICAgICAgIG1lcyA9IGludChtLmdyb3VwKDIpKQogICAgICAgICAgICBhbm8gPSBpbnQobS5ncm91cCgzKSkKCiAgICByZXR1cm4gdGlwbywgbWVzLCBhbm8KCiMg4pSA4pSA4pSAIFBBUlNFUiBERSBFTlRSQURBUyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIHBhcnNlX2VudHJhZGFzKHRleHRvLCBtZXMsIGFubyk6CiAgICBsaW5oYXMgPSBbXQogICAgY3VyX3BlZGlkbyA9IGN1cl9kYXRhID0gY3VyX2NsaWVudGUgPSBOb25lCiAgICBjdXJfdmFsb3IgPSAwCgogICAgZm9yIHJhdyBpbiB0ZXh0by5zcGxpdCgnXG4nKToKICAgICAgICBsaW5lID0gbGltcGFyX2xpbmhhKHJhdykKICAgICAgICBpZiBub3QgbGluZToKICAgICAgICAgICAgY29udGludWUKICAgICAgICBpZiBhbnkoeCBpbiBsaW5lIGZvciB4IGluIFsnR1IgJywgJ1JlbGF0w7NyaW8nLCAnRVNUUkFEQSBUSElBR08nLCAnTcOqczonLCAnTsK6IFBlZGlkbycsICdQw6FnaW5hJywgJ1RvdGFsIEdlcmFsJywgJ1RvdGFsIFRhYmVsYScsICdUb3RhbCBMw61xdWlkbyddKToKICAgICAgICAgICAgY29udGludWUKCiAgICAgICAgIyBGb3JtYXRvIDIwMjY6ICI4NTE0IDA2LzAxLzIwMjYgRkFSTUFDSUEgQlJBU0lMIDIuMzIzLDAwIgogICAgICAgIG1wID0gcmUubWF0Y2gocideKFxkezQsNn0pXHMrKFxkezJ9L1xkezJ9L1xkezR9KVxzKyguKz8pXHMrKFstXGQuXSssXGR7Mn0pXHMqJCcsIGxpbmUpCiAgICAgICAgaWYgbXA6CiAgICAgICAgICAgIGN1cl9wZWRpZG8gPSBtcC5ncm91cCgxKQogICAgICAgICAgICBkcCA9IG1wLmdyb3VwKDIpLnNwbGl0KCcvJykKICAgICAgICAgICAgY3VyX2RhdGEgPSBmIntkcFsyXX0te2RwWzFdfS17ZHBbMF19IgogICAgICAgICAgICBjdXJfY2xpZW50ZSA9IG1wLmdyb3VwKDMpLnN0cmlwKCkKICAgICAgICAgICAgY3VyX3ZhbG9yID0gcGFyc2VfdmFsb3IobXAuZ3JvdXAoNCkpCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgRm9ybWF0byAyMDI0OiAiNjAzMiBCUklTQSBFTUJBTEFHRU5TIDExLzA2LzIwMjQgMy45NzQsNjAiCiAgICAgICAgbXAyID0gcmUubWF0Y2gocideKFxkezQsNn0pXHMrKFtBLVrDgcOAw4PDicONw5PDmsOHXS4rPylccysoXGR7Mn0vXGR7Mn0vXGR7NH0pXHMrKFstXGQuXSssXGR7Mn0pXHMqJCcsIGxpbmUpCiAgICAgICAgaWYgbXAyOgogICAgICAgICAgICBjdXJfcGVkaWRvID0gbXAyLmdyb3VwKDEpCiAgICAgICAgICAgIGRwID0gbXAyLmdyb3VwKDMpLnNwbGl0KCcvJykKICAgICAgICAgICAgY3VyX2RhdGEgPSBmIntkcFsyXX0te2RwWzFdfS17ZHBbMF19IgogICAgICAgICAgICBjdXJfY2xpZW50ZSA9IG1wMi5ncm91cCgyKS5zdHJpcCgpCiAgICAgICAgICAgIGN1cl92YWxvciA9IHBhcnNlX3ZhbG9yKG1wMi5ncm91cCg0KSkKICAgICAgICAgICAgY29udGludWUKCiAgICAgICAgaWYgbm90IGN1cl9wZWRpZG86CiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgSWdub3JhciBsaW5oYXMgZGUgb2JzZXJ2YcOnw6NvCiAgICAgICAgaWYgbGVuKGxpbmUpID4gNTAgYW5kIHJlLnNlYXJjaChyJ1tBLVrDgcOAw4PDicONw5PDmsOHXXs0LH0nLCBsaW5lWzE1Ol0pOgogICAgICAgICAgICBjb250aW51ZQoKICAgICAgICAjIFRhYmVsYSBsZXRyYTogIkEgMiwwIDg0MCwwMCIKICAgICAgICBtdCA9IHJlLm1hdGNoKHInXihbQS1GXSlccysoW1xkLF0rfFgpXHMrKFtcZC5dKyxcZHsyfSlccyokJywgbGluZSwgcmUuSSkKICAgICAgICBpZiBtdDoKICAgICAgICAgICAgcGN0ID0gMCBpZiBtdC5ncm91cCgyKS51cHBlcigpID09ICdYJyBlbHNlIHBhcnNlX3ZhbG9yKG10Lmdyb3VwKDIpKQogICAgICAgICAgICBsaW5oYXMuYXBwZW5kKHsKICAgICAgICAgICAgICAgICdtZXMnOiBtZXMsICdhbm8nOiBhbm8sCiAgICAgICAgICAgICAgICAnbnVtZXJvX3BlZGlkbyc6IGN1cl9wZWRpZG8sICdkYXRhX3BlZGlkbyc6IGN1cl9kYXRhLAogICAgICAgICAgICAgICAgJ2NsaWVudGVfbm9tZSc6IGN1cl9jbGllbnRlLCAndGFiZWxhX2NvZGlnbyc6IG10Lmdyb3VwKDEpLnVwcGVyKCksCiAgICAgICAgICAgICAgICAncGVyY2VudHVhbCc6IHBjdCwgJ3ZhbG9yJzogcGFyc2VfdmFsb3IobXQuZ3JvdXAoMykpLAogICAgICAgICAgICAgICAgJ2VoX2VzdG9ybm8nOiBjdXJfdmFsb3IgPCAwCiAgICAgICAgICAgIH0pCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgVGFiZWxhIG51bcOpcmljYSBjb21wbGV0YTogIjE0OCBEMy41IDIuMTc2LDAwIgogICAgICAgIG10MiA9IHJlLm1hdGNoKHInXihcZHsyLDR9KVxzK1tERl0oW1hcZC4sXSspXHMrKFtcZC5dKyxcZHsyfSlccyokJywgbGluZSwgcmUuSSkKICAgICAgICBpZiBtdDI6CiAgICAgICAgICAgIHBjdCA9IDAgaWYgbXQyLmdyb3VwKDIpLnVwcGVyKCkgPT0gJ1gnIGVsc2UgcGFyc2VfdmFsb3IobXQyLmdyb3VwKDIpKQogICAgICAgICAgICBsaW5oYXMuYXBwZW5kKHsKICAgICAgICAgICAgICAgICdtZXMnOiBtZXMsICdhbm8nOiBhbm8sCiAgICAgICAgICAgICAgICAnbnVtZXJvX3BlZGlkbyc6IGN1cl9wZWRpZG8sICdkYXRhX3BlZGlkbyc6IGN1cl9kYXRhLAogICAgICAgICAgICAgICAgJ2NsaWVudGVfbm9tZSc6IGN1cl9jbGllbnRlLCAndGFiZWxhX2NvZGlnbyc6IG10Mi5ncm91cCgxKSwKICAgICAgICAgICAgICAgICdwZXJjZW50dWFsJzogcGN0LCAndmFsb3InOiBwYXJzZV92YWxvcihtdDIuZ3JvdXAoMykpLAogICAgICAgICAgICAgICAgJ2VoX2VzdG9ybm8nOiBjdXJfdmFsb3IgPCAwCiAgICAgICAgICAgIH0pCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgVGFiZWxhIG51bcOpcmljYSBzw7MgdmFsb3I6ICIxNDggMi4xNzYsMDAiCiAgICAgICAgbXQzID0gcmUubWF0Y2gocideKFxkezIsNH0pXHMrKFtcZC5dKyxcZHsyfSlccyokJywgbGluZSkKICAgICAgICBpZiBtdDM6CiAgICAgICAgICAgIGxpbmhhcy5hcHBlbmQoewogICAgICAgICAgICAgICAgJ21lcyc6IG1lcywgJ2Fubyc6IGFubywKICAgICAgICAgICAgICAgICdudW1lcm9fcGVkaWRvJzogY3VyX3BlZGlkbywgJ2RhdGFfcGVkaWRvJzogY3VyX2RhdGEsCiAgICAgICAgICAgICAgICAnY2xpZW50ZV9ub21lJzogY3VyX2NsaWVudGUsICd0YWJlbGFfY29kaWdvJzogbXQzLmdyb3VwKDEpLAogICAgICAgICAgICAgICAgJ3BlcmNlbnR1YWwnOiAwLCAndmFsb3InOiBwYXJzZV92YWxvcihtdDMuZ3JvdXAoMikpLAogICAgICAgICAgICAgICAgJ2VoX2VzdG9ybm8nOiBjdXJfdmFsb3IgPCAwCiAgICAgICAgICAgIH0pCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgIkQzLjUiIOKGkiBhdHVhbGl6YSBwY3QgZGEgw7psdGltYSBsaW5oYQogICAgICAgIG10NCA9IHJlLm1hdGNoKHInXkQoW1xkLixdKylccyokJywgbGluZSwgcmUuSSkKICAgICAgICBpZiBtdDQgYW5kIGxpbmhhczoKICAgICAgICAgICAgbGluaGFzWy0xXVsncGVyY2VudHVhbCddID0gcGFyc2VfdmFsb3IobXQ0Lmdyb3VwKDEpKQogICAgICAgICAgICBjb250aW51ZQoKICAgICAgICAjICJEWCIg4oaSIHBjdCB6ZXJvCiAgICAgICAgaWYgcmUubWF0Y2gocideKFxkK1xzKyk/RFhccyokJywgbGluZSwgcmUuSSkgYW5kIGxpbmhhczoKICAgICAgICAgICAgbGluaGFzWy0xXVsncGVyY2VudHVhbCddID0gMAoKICAgIHJldHVybiBsaW5oYXMKCiMg4pSA4pSA4pSAIFBBUlNFUiBERSBTQcONREFTIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApkZWYgcGFyc2Vfc2FpZGFzKHRleHRvLCBtZXMsIGFubyk6CiAgICBsaW5oYXMgPSBbXQogICAgZm9yIHJhdyBpbiB0ZXh0by5zcGxpdCgnXG4nKToKICAgICAgICBsaW5lID0gbGltcGFyX2xpbmhhKHJhdykKICAgICAgICBpZiBub3QgbGluZToKICAgICAgICAgICAgY29udGludWUKICAgICAgICBpZiBhbnkobGluZS5zdGFydHN3aXRoKHgpIGZvciB4IGluIFsnRVNUUkFEQScsICdOwrogUEVESURPJywgJ1RPVEFMJywgJ0NPTUlTU8ODTyArJ10pOgogICAgICAgICAgICBjb250aW51ZQogICAgICAgIGlmICdQw6FnaW5hJyBpbiBsaW5lOgogICAgICAgICAgICBjb250aW51ZQoKICAgICAgICAjIEZvcm1hdG8gRGV6LzIwMjU6ICIxMjgyMzYgR1JVUE8gWkFGRkFOSSAxNDIxMTcgUiQgMS4xMDMsOTAgRCAzLDUgNCw1IFIkIDQ5LDY4IgogICAgICAgIG0gPSByZS5tYXRjaCgKICAgICAgICAgICAgcideKFtcZFwvXSt8XCopXHMrKC4rPylccysoXGR7NCw3fXxcKilccytSXCRccyooW1xkLl0rLFxkezJ9KVxzKyhbQS1GXSlccysoW1xkLFhdKylccyooW1xkLF0qKVxzKlJcJFxzKihbXGQuLF0qfC0pXHMqJCcsCiAgICAgICAgICAgIGxpbmUsIHJlLkkKICAgICAgICApCiAgICAgICAgaWYgbToKICAgICAgICAgICAgcGN0ID0gMCBpZiBtLmdyb3VwKDYpLnVwcGVyKCkgPT0gJ1gnIGVsc2UgcGFyc2VfdmFsb3IobS5ncm91cCg2KSkKICAgICAgICAgICAgZXh0cmEgPSBwYXJzZV92YWxvcihtLmdyb3VwKDcpKSBpZiBtLmdyb3VwKDcpIGVsc2UgMAogICAgICAgICAgICBjb21fcyA9IG0uZ3JvdXAoOCkuc3RyaXAoKQogICAgICAgICAgICBjb20gPSAwIGlmIGNvbV9zIGluIFsnLScsICcnXSBlbHNlIHBhcnNlX3ZhbG9yKGNvbV9zKQogICAgICAgICAgICBsaW5oYXMuYXBwZW5kKHsKICAgICAgICAgICAgICAgICdtZXMnOiBtZXMsICdhbm8nOiBhbm8sCiAgICAgICAgICAgICAgICAnbnVtZXJvX3BlZGlkbyc6IG0uZ3JvdXAoMSksICdjbGllbnRlX25vbWUnOiBtLmdyb3VwKDIpLnN0cmlwKCksCiAgICAgICAgICAgICAgICAnbmYnOiBtLmdyb3VwKDMpLAogICAgICAgICAgICAgICAgJ3ZhbG9yJzogcGFyc2VfdmFsb3IobS5ncm91cCg0KSksCiAgICAgICAgICAgICAgICAndGFiZWxhX2NvZGlnbyc6IG0uZ3JvdXAoNSkudXBwZXIoKSwKICAgICAgICAgICAgICAgICdwZXJjZW50dWFsJzogcGN0LCAnZXh0cmEnOiBleHRyYSwgJ2NvbWlzc2FvJzogY29tCiAgICAgICAgICAgIH0pCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgRm9ybWF0byBKdW4vMjAyNCBjb20gZXh0cmE6ICI5NzkxOCBWSVRBTEUgMTE1OTM3IDIuNTU0LDAxIFIkIEQgMyw1IDQsNSAxMTQsOTMgUiQiCiAgICAgICAgbTIgPSByZS5tYXRjaCgKICAgICAgICAgICAgcideKFtcZFwvXSt8XCopXHMrKC4rPylccysoXGR7NCw3fXxcKilccysoW1xkLl0rLFxkezJ9KVxzK1JcJFxzKyhbQS1GXSlccysoW1xkLFhdKylccyooW1xkLF0qKVxzKyhbXGQuLF0rKVxzK1JcJFxzKiQnLAogICAgICAgICAgICBsaW5lLCByZS5JCiAgICAgICAgKQogICAgICAgIGlmIG0yOgogICAgICAgICAgICBwY3QgPSAwIGlmIG0yLmdyb3VwKDYpLnVwcGVyKCkgPT0gJ1gnIGVsc2UgcGFyc2VfdmFsb3IobTIuZ3JvdXAoNikpCiAgICAgICAgICAgIGV4dHJhID0gcGFyc2VfdmFsb3IobTIuZ3JvdXAoNykpIGlmIG0yLmdyb3VwKDcpIGVsc2UgMAogICAgICAgICAgICBjb20gPSBwYXJzZV92YWxvcihtMi5ncm91cCg4KSkKICAgICAgICAgICAgbGluaGFzLmFwcGVuZCh7CiAgICAgICAgICAgICAgICAnbWVzJzogbWVzLCAnYW5vJzogYW5vLAogICAgICAgICAgICAgICAgJ251bWVyb19wZWRpZG8nOiBtMi5ncm91cCgxKSwgJ2NsaWVudGVfbm9tZSc6IG0yLmdyb3VwKDIpLnN0cmlwKCksCiAgICAgICAgICAgICAgICAnbmYnOiBtMi5ncm91cCgzKSwKICAgICAgICAgICAgICAgICd2YWxvcic6IHBhcnNlX3ZhbG9yKG0yLmdyb3VwKDQpKSwKICAgICAgICAgICAgICAgICd0YWJlbGFfY29kaWdvJzogbTIuZ3JvdXAoNSkudXBwZXIoKSwKICAgICAgICAgICAgICAgICdwZXJjZW50dWFsJzogcGN0LCAnZXh0cmEnOiBleHRyYSwgJ2NvbWlzc2FvJzogY29tCiAgICAgICAgICAgIH0pCiAgICAgICAgICAgIGNvbnRpbnVlCgogICAgICAgICMgRm9ybWF0byBKdW4vMjAyNCBzZW0gZXh0cmE6ICI5ODY0MSBOU0EgQ0MgMTE2ODE0IDEuNDc0LDIwIFIkIEEgMiAyOSw0OCBSJCIKICAgICAgICBtMyA9IHJlLm1hdGNoKAogICAgICAgICAgICByJ14oW1xkXC9dK3xcKilccysoLis/KVxzKyhcZHs0LDd9fFwqKVxzKyhbXGQuXSssXGR7Mn0pXHMrUlwkXHMrKFtBLUZdKVxzKyhbXGQsWF0rKVxzKyhbXGQuLF0rKVxzK1JcJFxzKiQnLAogICAgICAgICAgICBsaW5lLCByZS5JCiAgICAgICAgKQogICAgICAgIGlmIG0zOgogICAgICAgICAgICBwY3QgPSAwIGlmIG0zLmdyb3VwKDYpLnVwcGVyKCkgPT0gJ1gnIGVsc2UgcGFyc2VfdmFsb3IobTMuZ3JvdXAoNikpCiAgICAgICAgICAgIGNvbSA9IHBhcnNlX3ZhbG9yKG0zLmdyb3VwKDcpKQogICAgICAgICAgICBsaW5oYXMuYXBwZW5kKHsKICAgICAgICAgICAgICAgICdtZXMnOiBtZXMsICdhbm8nOiBhbm8sCiAgICAgICAgICAgICAgICAnbnVtZXJvX3BlZGlkbyc6IG0zLmdyb3VwKDEpLCAnY2xpZW50ZV9ub21lJzogbTMuZ3JvdXAoMikuc3RyaXAoKSwKICAgICAgICAgICAgICAgICduZic6IG0zLmdyb3VwKDMpLAogICAgICAgICAgICAgICAgJ3ZhbG9yJzogcGFyc2VfdmFsb3IobTMuZ3JvdXAoNCkpLAogICAgICAgICAgICAgICAgJ3RhYmVsYV9jb2RpZ28nOiBtMy5ncm91cCg1KS51cHBlcigpLAogICAgICAgICAgICAgICAgJ3BlcmNlbnR1YWwnOiBwY3QsICdleHRyYSc6IDAsICdjb21pc3Nhbyc6IGNvbQogICAgICAgICAgICB9KQoKICAgIHJldHVybiBsaW5oYXMKCiMg4pSA4pSA4pSAIENBREFTVFJBUiBDTElFTlRFUyBOT1ZPUyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIGVuc3VyZV9jbGllbnRlcyhub21lcyk6CiAgICBleGlzdGVudGVzID0gc2JfZ2V0KCdjbGllbnRlcycsICc/c2VsZWN0PW5vbWUnKQogICAgc2V0X2V4aXN0ID0ge2NbJ25vbWUnXS51cHBlcigpLnN0cmlwKCkgZm9yIGMgaW4gZXhpc3RlbnRlc30KICAgIG5vdm9zID0gbGlzdCh7bi5zdHJpcCgpIGZvciBuIGluIG5vbWVzIGlmIG4gYW5kIG4udXBwZXIoKS5zdHJpcCgpIG5vdCBpbiBzZXRfZXhpc3R9KQogICAgZm9yIG5vbWUgaW4gbm92b3M6CiAgICAgICAgc2JfcG9zdCgnY2xpZW50ZXMnLCB7J25vbWUnOiBub21lLCAnc3RhdHVzJzogJ2F0aXZvJ30pCiAgICByZXR1cm4gbm92b3MKCiMg4pSA4pSA4pSAIENPTkZFUklSIERJVkVSR8OKTkNJQVMgREUgRU5UUkFEQSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIGNvbmZlcmlyX2VudHJhZGFzKGxpbmhhcywgbWVzLCBhbm8pOgogICAgcGVkaWRvcyA9IHNiX2dldCgncGVkaWRvcycsICc/c2VsZWN0PW51bWVyb19wZWRpZG8sdmFsb3JfdG90YWwnKQogICAgbWFwX3BlZCA9IHtwWydudW1lcm9fcGVkaWRvJ106IHAgZm9yIHAgaW4gcGVkaWRvc30KICAgIGFnID0ge30KICAgIGZvciBsIGluIGxpbmhhczoKICAgICAgICBpZiBsWydudW1lcm9fcGVkaWRvJ10gbm90IGluIGFnOgogICAgICAgICAgICBhZ1tsWydudW1lcm9fcGVkaWRvJ11dID0gbAogICAgZGl2cyA9IFtdCiAgICBmb3IgbnAsIGwgaW4gYWcuaXRlbXMoKToKICAgICAgICBpZiBucCBub3QgaW4gbWFwX3BlZDoKICAgICAgICAgICAgZGl2cy5hcHBlbmQoeyd0aXBvJzogJ2VudHJhZGEnLCAnbWVzJzogbWVzLCAnYW5vJzogYW5vLCAnbnVtZXJvX3BlZGlkbyc6IG5wLAogICAgICAgICAgICAgICAgICAgICAgICAnY2FtcG9fZGl2ZXJnZW50ZSc6ICduYW9fZW5jb250cmFkbycsICd2YWxvcl9wZGYnOiBucCwgJ3ZhbG9yX3Npc3RlbWEnOiAnbsOjbyBjYWRhc3RyYWRvJ30pCiAgICAgICAgZWxpZiBhYnMoZmxvYXQobWFwX3BlZFtucF1bJ3ZhbG9yX3RvdGFsJ10gb3IgMCkgLSBsWyd2YWxvciddKSA+IDAuMTA6CiAgICAgICAgICAgIGRpdnMuYXBwZW5kKHsndGlwbyc6ICdlbnRyYWRhJywgJ21lcyc6IG1lcywgJ2Fubyc6IGFubywgJ251bWVyb19wZWRpZG8nOiBucCwKICAgICAgICAgICAgICAgICAgICAgICAgJ2NhbXBvX2RpdmVyZ2VudGUnOiAndmFsb3InLCAndmFsb3JfcGRmJzogc3RyKGxbJ3ZhbG9yJ10pLAogICAgICAgICAgICAgICAgICAgICAgICAndmFsb3Jfc2lzdGVtYSc6IHN0cihtYXBfcGVkW25wXVsndmFsb3JfdG90YWwnXSl9KQogICAgcmV0dXJuIGRpdnMKCiMg4pSA4pSA4pSAIFBST0NFU1NBUiBVTSBQREYg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmRlZiBwcm9jZXNzYXJfcGRmKHBhdGgpOgogICAgbm9tZSA9IG9zLnBhdGguYmFzZW5hbWUocGF0aCkKICAgIHByaW50KGYiXG7wn5OEIFByb2Nlc3NhbmRvOiB7bm9tZX0iKQoKICAgIHRyeToKICAgICAgICB0ZXh0byA9IGV4dHJhaXJfdGV4dG8ocGF0aCkKICAgICAgICB0aXBvLCBtZXMsIGFubyA9IGRldGVjdGFyX2luZm8odGV4dG8pCiAgICAgICAgTUVTRVMgPSBbJ0phbicsJ0ZldicsJ01hcicsJ0FicicsJ01haScsJ0p1bicsJ0p1bCcsJ0FnbycsJ1NldCcsJ091dCcsJ05vdicsJ0RleiddCiAgICAgICAgbWVzX25vbWUgPSBNRVNFU1ttZXMtMV0gaWYgMSA8PSBtZXMgPD0gMTIgZWxzZSBzdHIobWVzKQogICAgICAgIHByaW50KGYiICAgVGlwbzoge3RpcG8udXBwZXIoKX0gfCBQZXLDrW9kbzoge21lc19ub21lfS97YW5vfSIpCgogICAgICAgIGlmIHRpcG8gPT0gJ2VudHJhZGEnOgogICAgICAgICAgICBsaW5oYXMgPSBwYXJzZV9lbnRyYWRhcyh0ZXh0bywgbWVzLCBhbm8pCiAgICAgICAgICAgIHByaW50KGYiICAgRXh0cmHDrWRhczoge2xlbihsaW5oYXMpfSBsaW5oYXMiKQoKICAgICAgICAgICAgaWYgbm90IGxpbmhhczoKICAgICAgICAgICAgICAgIHByaW50KCIgICDimqDvuI8gIE5lbmh1bWEgbGluaGEgZXh0cmHDrWRhLiBWZXJpZmlxdWUgbyBmb3JtYXRvIGRvIFBERi4iKQogICAgICAgICAgICAgICAgcmV0dXJuCgogICAgICAgICAgICAjIENhZGFzdHJhciBjbGllbnRlcyBub3ZvcwogICAgICAgICAgICBub3ZvcyA9IGVuc3VyZV9jbGllbnRlcyhbbFsnY2xpZW50ZV9ub21lJ10gZm9yIGwgaW4gbGluaGFzXSkKICAgICAgICAgICAgaWYgbm92b3M6CiAgICAgICAgICAgICAgICBwcmludChmIiAgIOKchSB7bGVuKG5vdm9zKX0gY2xpZW50ZShzKSBub3ZvKHMpIGNhZGFzdHJhZG8ocykiKQoKICAgICAgICAgICAgIyBTYWx2YXIgZW50cmFkYXMKICAgICAgICAgICAgc2JfZGVsZXRlKCdlbnRyYWRhcycsIGYnP21lcz1lcS57bWVzfSZhbm89ZXEue2Fub30nKQogICAgICAgICAgICBzYl9wb3N0KCdlbnRyYWRhcycsIGxpbmhhcykKCiAgICAgICAgICAgICMgQ29uZmVyaXIgZGl2ZXJnw6puY2lhcwogICAgICAgICAgICBkaXZzID0gY29uZmVyaXJfZW50cmFkYXMobGluaGFzLCBtZXMsIGFubykKICAgICAgICAgICAgc2JfZGVsZXRlKCdkaXZlcmdlbmNpYXMnLCBmJz90aXBvPWVxLmVudHJhZGEmbWVzPWVxLnttZXN9JmFubz1lcS57YW5vfScpCiAgICAgICAgICAgIGlmIGRpdnM6CiAgICAgICAgICAgICAgICBzYl9wb3N0KCdkaXZlcmdlbmNpYXMnLCBkaXZzKQogICAgICAgICAgICAgICAgcHJpbnQoZiIgICDimqDvuI8gIHtsZW4oZGl2cyl9IGRpdmVyZ8OqbmNpYShzKSBlbmNvbnRyYWRhKHMpIikKICAgICAgICAgICAgZWxzZToKICAgICAgICAgICAgICAgIHByaW50KGYiICAg4pyFIFNlbSBkaXZlcmfDqm5jaWFzIikKCiAgICAgICAgICAgIHRvdGFsID0gc3VtKGxbJ3ZhbG9yJ10gZm9yIGwgaW4gbGluaGFzIGlmIG5vdCBsWydlaF9lc3Rvcm5vJ10pCiAgICAgICAgICAgIHByaW50KGYiICAg8J+SsCBUb3RhbCBsw61xdWlkbzogUiQge3RvdGFsOiwuMmZ9IikKCiAgICAgICAgZWxzZTogICMgc2FpZGEKICAgICAgICAgICAgbGluaGFzID0gcGFyc2Vfc2FpZGFzKHRleHRvLCBtZXMsIGFubykKICAgICAgICAgICAgcHJpbnQoZiIgICBFeHRyYcOtZGFzOiB7bGVuKGxpbmhhcyl9IGxpbmhhcyIpCgogICAgICAgICAgICBpZiBub3QgbGluaGFzOgogICAgICAgICAgICAgICAgcHJpbnQoIiAgIOKaoO+4jyAgTmVuaHVtYSBsaW5oYSBleHRyYcOtZGEuIFZlcmlmaXF1ZSBvIGZvcm1hdG8gZG8gUERGLiIpCiAgICAgICAgICAgICAgICByZXR1cm4KCiAgICAgICAgICAgICMgQ2FkYXN0cmFyIGNsaWVudGVzIG5vdm9zCiAgICAgICAgICAgIG5vdm9zID0gZW5zdXJlX2NsaWVudGVzKFtsWydjbGllbnRlX25vbWUnXSBmb3IgbCBpbiBsaW5oYXNdKQogICAgICAgICAgICBpZiBub3ZvczoKICAgICAgICAgICAgICAgIHByaW50KGYiICAg4pyFIHtsZW4obm92b3MpfSBjbGllbnRlKHMpIG5vdm8ocykgY2FkYXN0cmFkbyhzKSIpCgogICAgICAgICAgICAjIFNhbHZhciBzYcOtZGFzCiAgICAgICAgICAgIHNiX2RlbGV0ZSgnc2FpZGFzJywgZic/bWVzPWVxLnttZXN9JmFubz1lcS57YW5vfScpCiAgICAgICAgICAgIHNiX3Bvc3QoJ3NhaWRhcycsIGxpbmhhcykKCiAgICAgICAgICAgICMgQ29uZmVyaXIgZGl2ZXJnw6puY2lhcyBkZSBjb21pc3PDo28KICAgICAgICAgICAgZGl2cyA9IFtdCiAgICAgICAgICAgIGZvciBsIGluIGxpbmhhczoKICAgICAgICAgICAgICAgIGlmIGxbJ3RhYmVsYV9jb2RpZ28nXSA9PSAnWCcgb3IgbFsnY29taXNzYW8nXSA9PSAwOgogICAgICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgICAgICBjYWxjID0gbFsndmFsb3InXSAqIChsWydwZXJjZW50dWFsJ10gKyBsWydleHRyYSddKSAvIDEwMAogICAgICAgICAgICAgICAgaWYgYWJzKGNhbGMgLSBsWydjb21pc3NhbyddKSA+IDAuMDU6CiAgICAgICAgICAgICAgICAgICAgZGl2cy5hcHBlbmQoewogICAgICAgICAgICAgICAgICAgICAgICAndGlwbyc6ICdzYWlkYScsICdtZXMnOiBtZXMsICdhbm8nOiBhbm8sCiAgICAgICAgICAgICAgICAgICAgICAgICdudW1lcm9fcGVkaWRvJzogbFsnbnVtZXJvX3BlZGlkbyddLAogICAgICAgICAgICAgICAgICAgICAgICAnY2FtcG9fZGl2ZXJnZW50ZSc6ICdjb21pc3NhbycsCiAgICAgICAgICAgICAgICAgICAgICAgICd2YWxvcl9wZGYnOiBzdHIobFsnY29taXNzYW8nXSksCiAgICAgICAgICAgICAgICAgICAgICAgICd2YWxvcl9zaXN0ZW1hJzogZiJ7Y2FsYzouMmZ9IgogICAgICAgICAgICAgICAgICAgIH0pCiAgICAgICAgICAgIHNiX2RlbGV0ZSgnZGl2ZXJnZW5jaWFzJywgZic/dGlwbz1lcS5zYWlkYSZtZXM9ZXEue21lc30mYW5vPWVxLnthbm99JykKICAgICAgICAgICAgaWYgZGl2czoKICAgICAgICAgICAgICAgIHNiX3Bvc3QoJ2RpdmVyZ2VuY2lhcycsIGRpdnMpCiAgICAgICAgICAgICAgICBwcmludChmIiAgIOKaoO+4jyAge2xlbihkaXZzKX0gZGl2ZXJnw6puY2lhKHMpIGRlIGNvbWlzc8OjbyIpCiAgICAgICAgICAgIGVsc2U6CiAgICAgICAgICAgICAgICBwcmludChmIiAgIOKchSBDb21pc3PDtWVzIGNvbmZlcmlkYXMiKQoKICAgICAgICAgICAgdG90YWxfdmFsID0gc3VtKGxbJ3ZhbG9yJ10gZm9yIGwgaW4gbGluaGFzKQogICAgICAgICAgICB0b3RhbF9jb20gPSBzdW0obFsnY29taXNzYW8nXSBmb3IgbCBpbiBsaW5oYXMpCiAgICAgICAgICAgIHByaW50KGYiICAg8J+SsCBGYXR1cmFkbzogUiQge3RvdGFsX3ZhbDosLjJmfSB8IENvbWlzc8OjbzogUiQge3RvdGFsX2NvbTosLjJmfSIpCgogICAgICAgIHByaW50KGYiICAg4pyFIENvbmNsdcOtZG8hIikKCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICAgICAgcHJpbnQoZiIgICDinYwgRXJybzoge2V9IikKICAgICAgICBpbXBvcnQgdHJhY2ViYWNrCiAgICAgICAgdHJhY2ViYWNrLnByaW50X2V4YygpCgojIOKUgOKUgOKUgCBNRU5VIFBSSU5DSVBBTCDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIG1haW4oKToKICAgIHByaW50KCI9IiAqIDU1KQogICAgcHJpbnQoIiAgR1IgVkVOREFTIOKAlCBJbXBvcnRhZG9yIGRlIFBERnMiKQogICAgcHJpbnQoIiAgVGhpYWdvIEVzdHJhZGEiKQogICAgcHJpbnQoIj0iICogNTUpCgogICAgIyBWZXJpZmljYXIgY29uZXjDo28gY29tIFN1cGFiYXNlCiAgICBwcmludCgiXG7wn5SMIFZlcmlmaWNhbmRvIGNvbmV4w6NvIGNvbSBvIGJhbmNvIGRlIGRhZG9zLi4uIikKICAgIHRyeToKICAgICAgICByID0gc2JfZ2V0KCdjbGllbnRlcycsICc/c2VsZWN0PWlkJmxpbWl0PTEnKQogICAgICAgIHByaW50KCIgICDinIUgQ29uZWN0YWRvIGFvIFN1cGFiYXNlISIpCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGU6CiAgICAgICAgcHJpbnQoZiIgICDinYwgRXJybyBkZSBjb25leMOjbzoge2V9IikKICAgICAgICBpbnB1dCgiXG5QcmVzc2lvbmUgRW50ZXIgcGFyYSBzYWlyLi4uIikKICAgICAgICByZXR1cm4KCiAgICBwcmludCgiXG5Fc2NvbGhhIHVtYSBvcMOnw6NvOiIpCiAgICBwcmludCgiICAxIC0gUHJvY2Vzc2FyIHVtIFBERiBlc3BlY8OtZmljbyIpCiAgICBwcmludCgiICAyIC0gUHJvY2Vzc2FyIHRvZG9zIG9zIFBERnMgZGUgdW1hIHBhc3RhIikKICAgIHByaW50KCIgIDMgLSBTYWlyIikKCiAgICBvcGNhbyA9IGlucHV0KCJcbk9ww6fDo286ICIpLnN0cmlwKCkKCiAgICBpZiBvcGNhbyA9PSAnMSc6CiAgICAgICAgY2FtaW5obyA9IGlucHV0KCJDYW1pbmhvIGRvIFBERjogIikuc3RyaXAoKS5zdHJpcCgnIicpCiAgICAgICAgaWYgb3MucGF0aC5leGlzdHMoY2FtaW5obyk6CiAgICAgICAgICAgIHByb2Nlc3Nhcl9wZGYoY2FtaW5obykKICAgICAgICBlbHNlOgogICAgICAgICAgICBwcmludChmIuKdjCBBcnF1aXZvIG7Do28gZW5jb250cmFkbzoge2NhbWluaG99IikKCiAgICBlbGlmIG9wY2FvID09ICcyJzoKICAgICAgICBwYXN0YSA9IGlucHV0KCJDYW1pbmhvIGRhIHBhc3RhIGNvbSBvcyBQREZzOiAiKS5zdHJpcCgpLnN0cmlwKCciJykKICAgICAgICBpZiBub3Qgb3MucGF0aC5pc2RpcihwYXN0YSk6CiAgICAgICAgICAgIHByaW50KGYi4p2MIFBhc3RhIG7Do28gZW5jb250cmFkYToge3Bhc3RhfSIpCiAgICAgICAgZWxzZToKICAgICAgICAgICAgcGRmcyA9IHNvcnRlZChbZiBmb3IgZiBpbiBvcy5saXN0ZGlyKHBhc3RhKSBpZiBmLmxvd2VyKCkuZW5kc3dpdGgoJy5wZGYnKV0pCiAgICAgICAgICAgIGlmIG5vdCBwZGZzOgogICAgICAgICAgICAgICAgcHJpbnQoIuKdjCBOZW5odW0gUERGIGVuY29udHJhZG8gbmEgcGFzdGEuIikKICAgICAgICAgICAgZWxzZToKICAgICAgICAgICAgICAgIHByaW50KGYiXG7wn5OCIHtsZW4ocGRmcyl9IFBERihzKSBlbmNvbnRyYWRvKHMpOiIpCiAgICAgICAgICAgICAgICBmb3IgZiBpbiBwZGZzOgogICAgICAgICAgICAgICAgICAgIHByaW50KGYiICAg4oCiIHtmfSIpCiAgICAgICAgICAgICAgICBjb25maXJtID0gaW5wdXQoZiJcblByb2Nlc3NhciB0b2Rvcz8gKHMvbik6ICIpLnN0cmlwKCkubG93ZXIoKQogICAgICAgICAgICAgICAgaWYgY29uZmlybSA9PSAncyc6CiAgICAgICAgICAgICAgICAgICAgb2sgPSAwCiAgICAgICAgICAgICAgICAgICAgZm9yIGYgaW4gcGRmczoKICAgICAgICAgICAgICAgICAgICAgICAgcHJvY2Vzc2FyX3BkZihvcy5wYXRoLmpvaW4ocGFzdGEsIGYpKQogICAgICAgICAgICAgICAgICAgICAgICBvayArPSAxCiAgICAgICAgICAgICAgICAgICAgcHJpbnQoZiJcbuKchSB7b2t9IGFycXVpdm8ocykgcHJvY2Vzc2FkbyhzKSEiKQoKICAgIHByaW50KCJcbiIgKyAiPSIgKiA1NSkKICAgIGlucHV0KCJQcmVzc2lvbmUgRW50ZXIgcGFyYSBzYWlyLi4uIikKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBtYWluKCkK';
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  const blob=new Blob([bytes],{type:'text/x-python'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='importar_pdfs.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  snk('📥 Script baixado!');
+}
+
+function downloadTranscrever(){
+  const b64='IiIiCkdSIFZFTkRBUyDigJQgVHJhbnNjcmnDp8OjbyBkZSBWb3ogcGFyYSBQZWRpZG9zCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQpUcmFuc2NyZXZlIMOhdWRpb3MgZSBjYWRhc3RyYSBwZWRpZG9zIGF1dG9tYXRpY2FtZW50ZSBubyBTdXBhYmFzZS4KCklOU1RBTEHDh8ODTyAoYXBlbmFzIHVtYSB2ZXopOgogIHBpcCBpbnN0YWxsIG9wZW5haS13aGlzcGVyIHJlcXVlc3RzIHRvcmNoCgpQQURSw4NPIERFIERJVEFETzoKICAiTm92byBwZWRpZG8sIGNsaWVudGUgTk9NRSBETyBDTElFTlRFLCB2YWxvciBWQUxPUiwgdGFiZWxhIFRBQkVMQSBQRVJDRU5UVUFMLiIKCiAgRXhlbXBsb3M6CiAgICAiTm92byBwZWRpZG8sIGNsaWVudGUgU1IgTWV0YWx1cmdpY2EsIHZhbG9yIDM2ODksMDAsIHRhYmVsYSBEIDMsNS4iCiAgICAiTm92byBwZWRpZG8sIGRhdGEgMzEgZG8gMDMsIGNsaWVudGUgQmFzc2FubyBBbGltZW50b3MsIHZhbG9yIDcgbWlsIDY2OSBlIDIwLCB0YWJlbGEgRCAzLDUuIgogICAgIk5vdm8gcGVkaWRvLCBjbGllbnRlIEdyYW5qYSBSaW8gQ2xhcm8sIHZhbG9yIDczIG1pbCA3MDAsIHRhYmVsYSAxMjUgRCAyLiIKCiAgRGljYXM6CiAgICAtIERpZ2EgIm5vdm8gcGVkaWRvIiBwYXJhIHNlcGFyYXIgb3MgcGVkaWRvcwogICAgLSBBIGRhdGEgw6kgb3BjaW9uYWwg4oCUIHNlIG9taXRpciwgdXNhIGEgZGF0YSBkZSBob2plCiAgICAtIFZhbG9yZXM6ICI5ODAiLCAiMSBtaWwgMjUwIiwgIjcgbWlsIDY2OSBlIDIwIiAoY2VudGF2b3MpCiAgICAtIFRhYmVsYXM6ICJBIDIiLCAiRCAzLDUiLCAiMTA4IEQgNCw1IgogICAgLSBQb2RlIGdyYXZhciB2w6FyaW9zIHBlZGlkb3MgbnVtIG1lc21vIMOhdWRpbwoiIiIKCmltcG9ydCBvcywgcmUsIHN5cywganNvbiwgcmVxdWVzdHMKZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZSwgZGF0ZXRpbWUKZnJvbSBkaWZmbGliIGltcG9ydCBTZXF1ZW5jZU1hdGNoZXIKCiMg4pSA4pSAIENPTkZJR1VSQcOHw4NPIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApTVVBBQkFTRV9VUkwgPSAiaHR0cHM6Ly9sYnJoY2tnZXVpZ3hscGFvdXlmZi5zdXBhYmFzZS5jbyIKU1VQQUJBU0VfS0VZID0gImV5SmhiR2NpT2lKSVV6STFOaUlzSW5SNWNDSTZJa3BYVkNKOS5leUpwYzNNaU9pSnpkWEJoWW1GelpTSXNJbkpsWmlJNklteGljbWhqYTJkbGRXbG5lR3h3WVc5MWVXWm1JaXdpY205c1pTSTZJbUZ1YjI0aUxDSnBZWFFpT2pFM056WTNPVEUxTnpjc0ltVjRjQ0k2TWpBNU1qTTJOelUzTjMwLjc3b0YxamlNY1lGQlZ5UkF2bVE4T1dkZU56LXZtbFZMLUExSGRYTFVtTEEiCkhFQURFUlMgPSB7CiAgICAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLAogICAgImFwaWtleSI6IFNVUEFCQVNFX0tFWSwKICAgICJBdXRob3JpemF0aW9uIjogZiJCZWFyZXIge1NVUEFCQVNFX0tFWX0iLAogICAgIlByZWZlciI6ICJyZXR1cm49cmVwcmVzZW50YXRpb24iCn0KQU5PX1BBRFJBTyA9IGRhdGUudG9kYXkoKS55ZWFyCk1FU0VTID0gewogICAgJ2phbmVpcm8nOjEsJ2ZldmVyZWlybyc6MiwnbWFyw6dvJzozLCdtYXJjbyc6MywnYWJyaWwnOjQsJ21haW8nOjUsJ2p1bmhvJzo2LAogICAgJ2p1bGhvJzo3LCdhZ29zdG8nOjgsJ3NldGVtYnJvJzo5LCdvdXR1YnJvJzoxMCwnbm92ZW1icm8nOjExLCdkZXplbWJybyc6MTIsCiAgICAnamFuJzoxLCdmZXYnOjIsJ21hcic6MywnYWJyJzo0LCdtYWknOjUsJ2p1bic6NiwKICAgICdqdWwnOjcsJ2Fnbyc6OCwnc2V0Jzo5LCdvdXQnOjEwLCdub3YnOjExLCdkZXonOjEyCn0KCiMg4pSA4pSAIFNVUEFCQVNFIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApkZWYgc2JfZ2V0KHRhYmVsYSwgcXVlcnk9IiIpOgogICAgciA9IHJlcXVlc3RzLmdldChmIntTVVBBQkFTRV9VUkx9L3Jlc3QvdjEve3RhYmVsYX17cXVlcnl9IiwgaGVhZGVycz1IRUFERVJTKQogICAgci5yYWlzZV9mb3Jfc3RhdHVzKCkKICAgIHJldHVybiByLmpzb24oKQoKZGVmIHNiX3Bvc3QodGFiZWxhLCBkYXRhKToKICAgIHIgPSByZXF1ZXN0cy5wb3N0KGYie1NVUEFCQVNFX1VSTH0vcmVzdC92MS97dGFiZWxhfSIsIGhlYWRlcnM9SEVBREVSUywganNvbj1kYXRhKQogICAgaWYgbm90IHIub2s6CiAgICAgICAgcHJpbnQoZiIgIOKaoO+4jyAgRXJybzoge3IudGV4dFs6MjAwXX0iKQogICAgICAgIHJldHVybiBOb25lCiAgICByZXR1cm4gci5qc29uKCkKCiMg4pSA4pSAIFRSQU5TQ1JJw4fDg08gV0hJU1BFUiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIHRyYW5zY3JldmVyKGNhbWluaG8pOgogICAgdHJ5OgogICAgICAgIGltcG9ydCB3aGlzcGVyCiAgICBleGNlcHQgSW1wb3J0RXJyb3I6CiAgICAgICAgcHJpbnQoIlxu4p2MIFdoaXNwZXIgbsOjbyBpbnN0YWxhZG8hIEV4ZWN1dGU6IikKICAgICAgICBwcmludCgiICAgcGlwIGluc3RhbGwgb3BlbmFpLXdoaXNwZXIgdG9yY2giKQogICAgICAgIHN5cy5leGl0KDEpCiAgICBwcmludCgiICAgwJ+UhCBDYXJyZWdhbmRvIG1vZGVsbyBXaGlzcGVyIChwcmltZWlyYSB2ZXogZmF6IGRvd25sb2FkIH40NjBNQikuLi4iKQogICAgbW9kZWwgPSB3aGlzcGVyLmxvYWRfbW9kZWwoInNtYWxsIikKICAgIHByaW50KCIgICDwn46Z77iPICBUcmFuc2NyZXZlbmRvLi4uIikKICAgIHJlc3VsdCA9IG1vZGVsLnRyYW5zY3JpYmUoY2FtaW5obywgbGFuZ3VhZ2U9InB0IiwgZnAxNj1GYWxzZSkKICAgIHRleHRvID0gcmVzdWx0WyJ0ZXh0Il0uc3RyaXAoKQogICAgcHJpbnQoZiJcbiAgIPCfk50gVHJhbnNjcmnDp8OjbzoiKQogICAgcHJpbnQoZiIgICB7Jyrila8nKjU1fSIpCiAgICBwcmludChmIiAgIHt0ZXh0b30iKQogICAgcHJpbnQoZiIgICB7Jyrila8nKjU1fSIpCiAgICByZXR1cm4gdGV4dG8KCiMg4pSA4pSAIFBBUlNFUiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIHNwbGl0X2NhbXBvcyhibG9jbyk6CiAgICAiIiJEaXZpZGUgcG9yIHbDrXJndWxhIHByb3RlZ2VuZG8gbsO6bWVyb3MgY29tbyAnMyw1JyBlICczNjg5LDAwJy4iIiIKICAgIHByb3RlZ2lkbyA9IHJlLnN1YihyJyhcZCksKFxkKScsIHInXDHCp1wyJywgYmxvY28pCiAgICBwYXJ0ZXMgPSBbcC5zdHJpcCgpIGZvciBwIGluIHByb3RlZ2lkby5zcGxpdCgnLCcpXQogICAgcmV0dXJuIFtwLnJlcGxhY2UoJ8KnJywgJywnKSBmb3IgcCBpbiBwYXJ0ZXNdCgpkZWYgcGFyc2VfdmFsb3IodCk6CiAgICB0ID0gdC5sb3dlcigpLnN0cmlwKCkKICAgIGNlbnQgPSAwLjAKICAgIG0gPSByZS5zZWFyY2gocidcYmVccysoXGR7MSwyfSlccyooPzpjZW50YXZvcz8pP1xzKiQnLCB0KQogICAgaWYgbToKICAgICAgICBjbiA9IGludChtLmdyb3VwKDEpKQogICAgICAgIGNlbnQgPSBjbi8xMDAgaWYgY24gPj0gMTAgZWxzZSBjbi8xMAogICAgICAgIHQgPSB0WzptLnN0YXJ0KCldLnN0cmlwKCkKICAgIHYgPSAwLjAKICAgIG0gPSByZS5zZWFyY2gocicgKFxkKylccyptaWxoW8OjYV1vJywgdCkKICAgIGlmIG06CiAgICAgICAgdiArPSBmbG9hdChtLmdyb3VwKDEpKSoxXzAwMF8wMDAKICAgICAgICB0ID0gcmUuc3ViKHInXGQrXHMqbWlsaFvDo2FdbycsJycsdCkuc3RyaXAoKQogICAgbSA9IHJlLnNlYXJjaChyJyhcZCspXHMqbWlsJywgdCkKICAgIGlmIG06CiAgICAgICAgdiArPSBmbG9hdChtLmdyb3VwKDEpKSoxMDAwCiAgICAgICAgdCA9IHJlLnN1YihyJ1xkK1xzKm1pbCcsJycsdCkuc3RyaXAoKQogICAgbSA9IHJlLnNlYXJjaChyJyhcZCsoPzpbLixdXGQrKT8pJywgdCkKICAgIGlmIG06CiAgICAgICAgdHJ5OiB2ICs9IGZsb2F0KG0uZ3JvdXAoMSkucmVwbGFjZSgnLCcsJy4nKSkKICAgICAgICBleGNlcHQ6IHBhc3MKICAgIHJldHVybiByb3VuZCh2ICsgY2VudCwgMikKCmRlZiBwYXJzZV9kYXRhKHQsIGFubz1BTk9fUEFEUkFPKToKICAgIHRsID0gdC5sb3dlcigpLnN0cmlwKCkKICAgIG0gPSByZS5tYXRjaChyJyhcZHsxLDJ9KVxzK2Rbb2VdXHMrKFxkezEsMn0pKD8hXGQpJywgdGwpCiAgICBpZiBtOgogICAgICAgIGQsbXMgPSBpbnQobS5ncm91cCgxKSksaW50KG0uZ3JvdXAoMikpCiAgICAgICAgaWYgMTw9ZDw9MzEgYW5kIDE8PW1zPD0xMjoKICAgICAgICAgICAgcmV0dXJuIGYie2Fub30te21zOjAyZH0te2Q6MDJkfSIKICAgIGZvciBub21lLG51bSBpbiBNRVNFUy5pdGVtcygpOgogICAgICAgIG0yID0gcmUubWF0Y2gocmYnKFxke3sxLDJ9fSlccytkZVxzK3tub21lfSg/IVx3KScsIHRsKQogICAgICAgIGlmIG0yOgogICAgICAgICAgICBkID0gaW50KG0yLmdyb3VwKDEpKQogICAgICAgICAgICBpZiAxPD1kPD0zMTogcmV0dXJuIGYie2Fub30te251bTowMmR9LXtkOjAyZH0iCiAgICBpZiAnaG9qZScgaW4gdGw6IHJldHVybiBkYXRlLnRvZGF5KCkuc3RyZnRpbWUoJyVZLSVtLSVkJykKICAgIHJldHVybiBOb25lCgpkZWYgcGFyc2VfdGFiZWxhKHQpOgogICAgdCA9IHJlLnN1YihyJ150YWIoPzplbGEpP1xzKicsJycsIHQubG93ZXIoKS5zdHJpcCgpKQogICAgbSA9IHJlLm1hdGNoKHInKFxkezIsNH0pXHMrZFxzKihcZCsoPzpbLixdXGQrKT8pJywgdCkKICAgIGlmIG06IHJldHVybiBtLmdyb3VwKDEpLCBmbG9hdChtLmdyb3VwKDIpLnJlcGxhY2UoJywnLCcuJykpCiAgICBtID0gcmUubWF0Y2gocicoW2EtZl0pXHMrKFxkKyg/OlsuLF1cZCspPyknLCB0KQogICAgaWYgbTogcmV0dXJuIG0uZ3JvdXAoMSkudXBwZXIoKSwgZmxvYXQobS5ncm91cCgyKS5yZXBsYWNlKCcsJywnLicpKQogICAgbSA9IHJlLm1hdGNoKHInKFthLWZdfFxkezIsNH0pXHMreCcsIHQpCiAgICBpZiBtOiByZXR1cm4gbS5ncm91cCgxKS51cHBlcigpLCAwLjAKICAgIHJldHVybiAnJywgMC4wCgpkZWYgcGFyc2VfcGVkaWRvKGJsb2NvLCBhbm89QUNPX1BBRFJBTyk6CiAgICBibG9jbyA9IHJlLnN1YihyJ1xzKycsICcgJywgYmxvY28ubG93ZXIoKSkuc3RyaXAoKQogICAgaWYgbGVuKGJsb2NvKSA8IDU6IHJldHVybiBOb25lCiAgICByZXMgPSBkaWN0KGRhdGE9ZGF0ZS50b2RheSgpLnN0cmZ0aW1lKCclWS0lbS0lZCcpLAogICAgICAgICAgICAgICBjbGllbnRlX3Jhdz0nJywgY2xpZW50ZV9pZD1Ob25lLCBjbGllbnRlX25vbWU9JycsCiAgICAgICAgICAgICAgIHZhbG9yPTAuMCwgdGFiZWxhPScnLCBwZXJjZW50dWFsPTAuMCwgbWF0Y2hfc2NvcmU9MCkKICAgIGZvciBwYXJ0ZSBpbiBzcGxpdF9jYW1wb3MoYmxvY28pOgogICAgICAgIHBhcnRlID0gcGFydGUuc3RyaXAoKQogICAgICAgIGlmIG5vdCBwYXJ0ZTogY29udGludWUKICAgICAgICBpZiBwYXJ0ZS5zdGFydHN3aXRoKCdkYXRhICcpOgogICAgICAgICAgICBkID0gcGFyc2VfZGF0YShwYXJ0ZVs1Ol0sIGFubykKICAgICAgICAgICAgaWYgZDogcmVzWydkYXRhJ10gPSBkCiAgICAgICAgZWxpZiByZS5tYXRjaChyJ1xkezEsMn1ccytkW29lXVxzK1xkezEsMn0nLCBwYXJ0ZSk6CiAgICAgICAgICAgIGQgPSBwYXJzZV9kYXRhKHBhcnRlLCBhbm8pCiAgICAgICAgICAgIGlmIGQ6IHJlc1snZGF0YSddID0gZAogICAgICAgIGVsaWYgcGFydGUuc3RhcnRzd2l0aCgnY2xpZW50ZSAnKToKICAgICAgICAgICAgY2xpID0gcGFydGVbODpdLnN0cmlwKCkudXBwZXIoKQogICAgICAgICAgICByZXNbJ2NsaWVudGVfcmF3J10gPSBjbGkKICAgICAgICAgICAgcmVzWydjbGllbnRlX25vbWUnXSA9IGNsaQogICAgICAgIGVsaWYgcmUubWF0Y2gocid2KD86YWxvcik/XHMrJywgcGFydGUpOgogICAgICAgICAgICByZXNbJ3ZhbG9yJ10gPSBwYXJzZV92YWxvcihyZS5zdWIocidedig/OmFsb3IpP1xzKycsJycscGFydGUpKQogICAgICAgIGVsaWYgcmUubWF0Y2gocid0YWIoPzplbGEpP1xzKycsIHBhcnRlKToKICAgICAgICAgICAgdGFiLHBjdCA9IHBhcnNlX3RhYmVsYShyZS5zdWIocidedGFiKD86ZWxhKT9ccysnLCcnLHBhcnRlKSkKICAgICAgICAgICAgcmVzWyd0YWJlbGEnXSA9IHRhYgogICAgICAgICAgICByZXNbJ3BlcmNlbnR1YWwnXSA9IHBjdAogICAgaWYgbm90IHJlc1snY2xpZW50ZV9yYXcnXSBvciByZXNbJ3ZhbG9yJ10gPD0gMDogcmV0dXJuIE5vbmUKICAgIHJldHVybiByZXMKCmRlZiBwYXJzZV9wZWRpZG9zX2F1ZGlvKHRleHRvLCBhbm89QUNPX1BBRFJBTyk6CiAgICB0ID0gcmUuc3ViKHInXHMrJywgJyAnLCB0ZXh0by5sb3dlcigpKS5zdHJpcCgpCiAgICBibG9jb3MgPSByZS5zcGxpdChyJ25vdm9ccytwZWRpZG98cHJbb8OzXXhpbW9ccytwZWRpZG8nLCB0KQogICAgcmV0dXJuIFtwIGZvciBiIGluIGJsb2NvcyBpZiAocCA6PSBwYXJzZV9wZWRpZG8oYiwgYW5vKSldCgojIOKUgOKUgCBGVVpaWSBNQVRDSCBERSBDTElFTlRFUyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIGJ1c2Nhcl9jbGllbnRlKG5vbWUsIGNsaWVudGVzX2RiKToKICAgIG5vbWUgPSBub21lLnVwcGVyKCkuc3RyaXAoKQogICAgbWVsaG9yLCBzY29yZSA9IE5vbmUsIDAKICAgIGZvciBjIGluIGNsaWVudGVzX2RiOgogICAgICAgIGRiID0gY1snbm9tZSddLnVwcGVyKCkuc3RyaXAoKQogICAgICAgIGlmIG5vbWUgPT0gZGI6IHJldHVybiBjLCAxLjAKICAgICAgICBpZiBub21lIGluIGRiIG9yIGRiIGluIG5vbWU6IHMgPSAwLjkKICAgICAgICBlbHNlOiBzID0gU2VxdWVuY2VNYXRjaGVyKE5vbmUsIG5vbWUsIGRiKS5yYXRpbygpCiAgICAgICAgcGYgPSBzZXQobm9tZS5zcGxpdCgpKQogICAgICAgIHBkID0gc2V0KGRiLnNwbGl0KCkpCiAgICAgICAgaWYgcGYgYW5kIHBmLmlzc3Vic2V0KHBkKTogcyA9IG1heChzLCAwLjg1KQogICAgICAgIGlmIHMgPiBzY29yZTogc2NvcmUgPSBzOyBtZWxob3IgPSBjCiAgICByZXR1cm4gbWVsaG9yLCBzY29yZQoKZGVmIHJlc29sdmVyX2NsaWVudGVzKHBlZGlkb3MsIGNsaWVudGVzX2RiKToKICAgIGZvciBwIGluIHBlZGlkb3M6CiAgICAgICAgYywgc2NvcmUgPSBidXNjYXJfY2xpZW50ZShwWydjbGllbnRlX3JhdyddLCBjbGllbnRlc19kYikKICAgICAgICBpZiBjIGFuZCBzY29yZSA+PSAwLjYwOgogICAgICAgICAgICBwWydjbGllbnRlX2lkJ10gPSBjWydpZCddCiAgICAgICAgICAgIHBbJ2NsaWVudGVfbm9tZSddID0gY1snbm9tZSddCiAgICAgICAgICAgIHBbJ21hdGNoX3Njb3JlJ10gPSBzY29yZQogICAgICAgICAgICBpZiBzY29yZSA8IDAuODU6CiAgICAgICAgICAgICAgICBwcmludChmIiAg4pqg77iPICBNYXRjaCBwYXJjaWFsICh7c2NvcmU6LjAlfSk6ICd7cFsnY2xpZW50ZV9yYXcnXX0nIOKGkiAne2NbJ25vbWUnXX0nIikKICAgICAgICBlbHNlOgogICAgICAgICAgICBwWydjbGllbnRlX2lkJ10gPSBOb25lCiAgICAgICAgICAgIHBbJ21hdGNoX3Njb3JlJ10gPSAwCiAgICAgICAgICAgIHByaW50KGYiICDinYwgQ2xpZW50ZSBuw6NvIGVuY29udHJhZG86ICd7cFsnY2xpZW50ZV9yYXcnXX0nIikKICAgIHJldHVybiBwZWRpZG9zCgojIOKUgOKUgCBFWElCSVIgRSBDT05GSVJNQVIg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmRlZiBjb25maXJtYXIocGVkaWRvcyk6CiAgICBvayAgPSBbcCBmb3IgcCBpbiBwZWRpZG9zIGlmIHBbJ2NsaWVudGVfaWQnXV0KICAgIG5vayA9IFtwIGZvciBwIGluIHBlZGlkb3MgaWYgbm90IHBbJ2NsaWVudGVfaWQnXV0KICAgIHByaW50KGYiXG57Jyrila8nKjY1fSIpCiAgICBwcmludChmIiAgeycjJzo+M30gIHsnRGF0YSc6PjEwfSAgeygnQ2xpZW50ZSc6PDMwfSAgeygnVmFsb3InOj4xMH0gIFRhYiIpCiAgICBwcmludChmInsnilerJyo2NX0iKQogICAgZm9yIGkscCBpbiBlbnVtZXJhdGUob2ssMSk6CiAgICAgICAgc2MgPSBmIiAoe3BbJ21hdGNoX3Njb3JlJ106LjAlfSkiIGlmIHBbJ21hdGNoX3Njb3JlJ108MC45NSBlbHNlICIiCiAgICAgICAgcHJpbnQoZiIgIHtpOj4zfSAge3BbJ2RhdGEnXTo+MTB9ICB7cFsnY2xpZW50ZV9ub21lJ11bOjMwXTo8MzB9ICBSJHtwWyd2YWxvciddOj45LC4yZn0gIHtwWyd0YWJlbGEnXX0ge3BbJ3BlcmNlbnR1YWwnXX0le3NjfSIpCiAgICBpZiBub2s6CiAgICAgICAgcHJpbnQoZiJcbiAg4pqg77iPICBTZW0gY2xpZW50ZSBlbmNvbnRyYWRvICh7bGVuKG5vayl9KToiKQogICAgICAgIGZvciBwIGluIG5vazoKICAgICAgICAgICAgcHJpbnQoZiIgICAgICAgIOKGkiAne3BbJ2NsaWVudGVfcmF3J119JyDiiJQgUiQge3BbJ3ZhbG9yJ106LC4yZn0iKQogICAgcHJpbnQoZiJ7JyrilerJyo2NX0iKQogICAgcHJpbnQoZiIgIFRvdGFsOiB7bGVuKG9rKX0gcGVkaWRvKHMpIHwgUiQge3N1bShwWyd2YWxvciddIGZvciBwIGluIG9rKTosLjJmfSIpCiAgICBpZiBub2s6IHByaW50KGYiICB7bGVuKG5vayl9IHBlZGlkbyhzKSBzZXLDo28gaWdub3JhZG9zIikKICAgIHByaW50KGYieycrilerJyo2NX0iKQogICAgcmV0dXJuIGlucHV0KCJcbiAgQ29uZmlybWFyIGUgc2FsdmFyPyAocy9uKTogIikuc3RyaXAoKS5sb3dlcigpID09ICdzJwoKIyDilIDilIAgU0FMVkFSIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApkZWYgc2FsdmFyKHBlZGlkb3MpOgogICAgc2Fsdm9zID0gZXJyb3MgPSAwCiAgICBmb3IgcCBpbiBwZWRpZG9zOgogICAgICAgIGlmIG5vdCBwWydjbGllbnRlX2lkJ106IGNvbnRpbnVlCiAgICAgICAgciA9IHNiX3Bvc3QoJ3BlZGlkb3MnLCB7CiAgICAgICAgICAgICdkYXRhX3BlZGlkbyc6IHBbJ2RhdGEnXSwKICAgICAgICAgICAgJ2NsaWVudGVfaWQnOiBwWydjbGllbnRlX2lkJ10sCiAgICAgICAgICAgICd2YWxvcl90b3RhbCc6IHBbJ3ZhbG9yJ10sCiAgICAgICAgICAgICdzdGF0dXMnOiAnUGVuZGVudGUnLAogICAgICAgICAgICAnb2JzZXJ2YWNhbyc6IGYiw4F1ZGlvIHwgVGFiOiB7cFsndGFiZWxhJ119IHtwWydwZXJjZW50dWFsJ119JSIKICAgICAgICB9KQogICAgICAgIGlmIHI6IHNhbHZvcyArPSAxOyBwcmludChmIiAg4pyFIHtwWydjbGllbnRlX25vbWUnXVs6NDBdfSDiiJQgUiQge3BbJ3ZhbG9yJ106LC4yZn0iKQogICAgICAgIGVsc2U6IGVycm9zICs9IDEKICAgIHJldHVybiBzYWx2b3MsIGVycm9zCgojIOKUgOKUgCBQUk9DRVNTQVJDDSFJVURJTYDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIDILIAKZGVMIHBYB2Nlc3NhcihjYW1pbmhvLCBjbGllbnRlc19kYiwgYW5vKToKICAgIHByaW50KGYiXG57Jz0nKjY1fSIpCiAgICBwcmludChmIiAg8J+OmevuuI8ge29zLnBhdGguYmFzZW5hbWUoY2FtaW5obyl9IikKICAgIHByaW50KGYieyc9Jyo2NX0iKQogICAgdGV4dG8gPSB0cmFuc2NyZXZlcihjYW1pbmhvKQogICAgcGVkaWRvcyA9IHBhcnNlX3BlZGlkb3NfYXVkaW8odGV4dG8sIGFubykKICAgIHByaW50KGYiXG4gIPCfk6Yge2xlbihwZWRpZG9zKX0gcGVkaWRvKHMpIGlkZW50aWZpY2Fkb3MocykiKQogICAgaWYgbm90IHBlZGlkb3M6CiAgICAgICAgcHJpbnQoIiAg4pqg77iPICBOZW5odW0gcGVkaWRvLiBWZXJpZmlxdWUgc2UgdXNvdSBvIHBhZHLDo28gY29ycmV0by4iKQogICAgICAgIHJldHVybiAwLCAwCiAgICBwcmludChmIlxuICDwn5GkIEJ1c2NhbmRvIGNsaWVudGVzLi4uIikKICAgIHBlZGlkb3MgPSByZXNvbHZlcl9jbGllbnRlcyhwZWRpZG9zLCBjbGllbnRlc19kYikKICAgIGlmIG5vdCBjb25maXJtYXIocGVkaWRvcyk6CiAgICAgICAgcHJpbnQoIiAg4p2MIENhbmNlbGFkby4iKTsgcmV0dXJuIDAsIDAKICAgIHByaW50KGYiXG4gIPCfkr4gU2FsdmFuZG8uLi4iKQogICAgcywgZSA9IHNhbHZhcihwZWRpZG9zKQogICAgcHJpbnQoZiJcbiAg4pyFIHtzfSBzYWx2byhzKSB8IOKdjCB7ZX0gZXJybyhzKSIpCiAgICByZXR1cm4gcywgZQoKIyDilIDilIAgTUVOVSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZGVmIG1haW4oKToKICAgIHByaW50KCI9IiAqIDY1KQogICAgcHJpbnQoIiAgR1IgVkVOREFTIOKAlCBUcmFuc2NyacOnw6NvIGRlIFZveiBwYXJhIFBlZGlkb3MiKQogICAgcHJpbnQoIj0iICogNjUpCiAgICBwcmludCgiXG4gIFBBRFLDg08gREUgRElUQURPOiIpCiAgICBwcmludCgiICAnTm92byBwZWRpZG8sIGNsaWVudGUgTk9NRSwgdmFsb3IgVkFMT1IsIHRhYmVsYSBUQUIgUEVSQy4nIikKICAgIHByaW50KCIgIEV4OiAnTm92byBwZWRpZG8sIGNsaWVudGUgU1IgTWV0YWx1cmdpY2EsIHZhbG9yIDM2ODksMDAsIHRhYmVsYSBEIDMsNS4nIikKICAgIHByaW50KCkKCiAgICBwcmludCgi8J+UjCBDb25lY3RhbmRvIGFvIGJhbmNvLi4uIikKICAgIHRyeToKICAgICAgICBjbGllbnRlc19kYiA9IHNiX2dldCgnY2xpZW50ZXMnLCc/c2VsZWN0PWlkLGNvZGlnbyxub21lJnN0YXR1cz1lcS5hdGl2byZvcmRlcj1ub21lJykKICAgICAgICBwcmludChmIiAg4pyFIHtsZW4oY2xpZW50ZXNfZGIpfSBjbGllbnRlcyBjYXJyZWdhZG9zIikKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToKICAgICAgICBwcmludChmIiAg4p2MIEVycm86IHtlfSIpOyBpbnB1dCgiXG5FbnRlciBwYXJhIHNhaXIuLi4iKTsgcmV0dXJuCgogICAgYW5vX3MgPSBpbnB1dChmIlxuQW5vIGRvcyBwZWRpZG9zIFt7QU5PX1BBRFJBT31dOiAiKS5zdHJpcCgpCiAgICBhbm8gPSBpbnQoYW5vX3MpIGlmIGFub19zLmlzZGlnaXQoKSBlbHNlIEFOT19QQURSQU8KCiAgICBwcmludCgiXG5PcMOnw7VlczoiKQogICAgcHJpbnQoIiAgMSDigJQgUHJvY2Vzc2FyIHVtIGFycXVpdm8gZGUgw6F1ZGlvIikKICAgIHByaW50KCIgIDIg4oCUIFByb2Nlc3NhciB0b2RvcyBvcyDDoXVkaW9zIGRlIHVtYSBwYXN0YSIpCiAgICBwcmludCgiICAzIOKAlCBUZXN0YXIgZGlnaXRhbmRvIG8gdGV4dG8gKHNlbSDDoXVkaW8pIikKICAgIHByaW50KCIgIDQg4oCUIFNhaXIiKQogICAgb3AgPSBpbnB1dCgiXG5PcMOnw6NvOiAiKS5zdHJpcCgpCgogICAgaWYgb3AgPT0gJzEnOgogICAgICAgIGMgPSBpbnB1dCgiQ2FtaW5obyBkbyBhcnF1aXZvICgubTRhLy5tcDMvLndhdik6ICIpLnN0cmlwKCkuc3RyaXAoJyInKQogICAgICAgIGlmIG9zLnBhdGguaXNmaWxlKGMpOiBwcm9jZXNzYXIoYywgY2xpZW50ZXNfZGIsIGFubykKICAgICAgICBlbHNlOiBwcmludChmIuKdjCBOw6NvIGVuY29udHJhZG86IHtjfSIpCgogICAgZWxpZiBvcCA9PSAnMic6CiAgICAgICAgcGFzdGEgPSBpbnB1dCgiQ2FtaW5obyBkYSBwYXN0YTogIikuc3RyaXAoKS5zdHJpcCgnIicpCiAgICAgICAgaWYgbm90IG9zLnBhdGguaXNkaXIocGFzdGEpOiBwcmludChmIuKdjCBQYXN0YSBuw6NvIGVuY29udHJhZGEiKTsgcmV0dXJuCiAgICAgICAgZXh0cyA9ICgnLm00YScsJy5tcDMnLCcud2F2JywnLm9nZycsJy5hYWMnLCcubXA0JykKICAgICAgICBhcnFzID0gc29ydGVkKFtmIGZvciBmIGluIG9zLmxpc3RkaXIocGFzdGEpIGlmIGYubG93ZXIoKS5lbmRzd2l0aChleHRzKV0pCiAgICAgICAgaWYgbm90IGFycXM6IHByaW50KCLinYwgTmVuaHVtIMOhdWRpbyBlbmNvbnRyYWRvLiIpOyByZXR1cm4KICAgICAgICBwcmludChmIlxu8J+TgiB7bGVuKGFycXMpfSBhcnF1aXZvKHMpOiIpCiAgICAgICAgZm9yIGYgaW4gYXJxczogcHJpbnQoZiIgIOKAoiB7Zn0iKQogICAgICAgIGlmIGlucHV0KGYiXG5Qcm9jZXNzYXIgdG9kb3M/IChzL24pOiAiKS5zdHJpcCgpLmxvd2VyKCk9PSdzJzoKICAgICAgICAgICAgdG90YWwgPSAwCiAgICAgICAgICAgIGZvciBmIGluIGFycXM6CiAgICAgICAgICAgICAgICBzLF8gPSBwcm9jZXNzYXIob3MucGF0aC5qb2luKHBhc3RhLGYpLCBjbGllbnRlc19kYiwgYW5vKQogICAgICAgICAgICAgICAgdG90YWwgKz0gcwogICAgICAgICAgICBwcmludChmIlxu4pyFIFRvdGFsIHNhbHZvOiB7dG90YWx9IHBlZGlkbyhzKSIpCgogICAgZWxpZiBvcCA9PSAnMyc6CiAgICAgICAgcHJpbnQoIlxuRGlnaXRlIG8gdGV4dG8gKHNpbXVsZSBhIHRyYW5zY3Jpw6fDo28pLiBGSU0gcGFyYSBlbmNlcnJhci5cbiIpCiAgICAgICAgbGluaGFzID0gW10KICAgICAgICB3aGlsZSBUcnVlOgogICAgICAgICAgICBsID0gaW5wdXQoIiAgPiAiKQogICAgICAgICAgICBpZiBsLnN0cmlwKCkudXBwZXIoKT09J0ZJTSc6IGJyZWFrCiAgICAgICAgICAgIGxpbmhhcy5hcHBlbmQobCkKICAgICAgICB0ZXh0byA9ICcgJy5qb2luKGxpbmhhcykKICAgICAgICBpZiB0ZXh0by5zdHJpcCgpOgogICAgICAgICAgICBwZWRpZG9zID0gcGFyc2VfcGVkaWRvc19hdWRpbyh0ZXh0bywgYW5vKQogICAgICAgICAgICBwcmludChmIlxuICDwn5OmIHtsZW4ocGVkaWRvcyl9IHBlZGlkbyhzKSBpZGVudGlmaWNhZG8ocykiKQogICAgICAgICAgICBwZWRpZG9zID0gcmVzb2x2ZXJfY2xpZW50ZXMocGVkaWRvcywgY2xpZW50ZXNfZGIpCiAgICAgICAgICAgIGlmIGNvbmZpcm1hcihwZWRpZG9zKToKICAgICAgICAgICAgICAgIHMsZSA9IHNhbHZhcihwZWRpZG9zKQogICAgICAgICAgICAgICAgcHJpbnQoZiJcbiAg4pyFIHtzfSBzYWx2byhzKSB8IOKdjCB7ZX0gZXJybyhzKSIpCgogICAgaW5wdXQoIlxuRW50ZXIgcGFyYSBzYWlyLi4uIikKCmlmIF9fbmFtZV9fID09ICdfX21haW5fXyc6CiAgICBtYWluKCkK';
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  const blob=new Blob([bytes],{type:'text/x-python'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='transcrever_pedidos.py';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  snk('Baixado!');
+}
+
+// ── GRUPOS ECONÔMICOS ──────────────────────────────────────────────────────
+pages.grupos=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmGr()">+ Novo grupo</button>`;
+  try{
+    const rows=await sb('grupos_economicos','GET',null,'?order=nome');
+    // Contar clientes por grupo
+    const clis=await sb('clientes','GET',null,'?select=grupo_id');
+    const cnt={};clis.forEach(c=>{if(c.grupo_id)cnt[c.grupo_id]=(cnt[c.grupo_id]||0)+1});
+    document.getElementById('ct').innerHTML=`<div class="card"><div class="ov"><table>
+      <thead><tr><th>Código</th><th>Nome do Grupo</th><th>Clientes</th><th></th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td><span class="chip">${r.id}</span></td>
+        <td>${r.nome}</td>
+        <td>${cnt[r.id]||0}</td>
+        <td><button class="btn bs" onclick="fmGr(${r.id})">Editar</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+async function fmGr(id=null){
+  const g=id?(await sb('grupos_economicos','GET',null,`?id=eq.${id}`))[0]:{};
+  // Buscar clientes do grupo
+  let clis_html='';
+  if(id){
+    const clis=await sb('clientes','GET',null,`?grupo_id=eq.${id}&select=codigo,nome,cidades(cidade)&order=nome`);
+    clis_html=clis.length?`
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:500;color:var(--tx2);margin-bottom:8px">CLIENTES DESTE GRUPO (${clis.length})</div>
+      <div class="ov"><table><thead><tr><th>Código</th><th>Cliente</th><th>Cidade</th></tr></thead>
+      <tbody>${clis.map(c=>`<tr><td><span class="chip">${c.codigo||'—'}</span></td><td>${c.nome}</td><td>${c.cidades?.cidade||'—'}</td></tr>`).join('')}
+      </tbody></table></div>
+    </div>`:'';
+  }
+  mdl(`<div class="rowb" style="margin-bottom:12px">
+    <span style="font-weight:500">${id?'Editar':'Novo'} grupo econômico</span>
+    <button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button>
+  </div>
+  <div class="fg2">
+    <div class="fg"><label>Código</label><input type="number" id="gr-id" value="${g.id||''}" ${id?'disabled':''}></div>
+    <div class="fg" style="grid-column:span 1"><label>Nome do grupo</label><input id="gr-nome" value="${g.nome||''}"></div>
+  </div>
+  ${clis_html}
+  <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    ${id?`<button class="btn bs bdg" onclick="dlGr(${id})">Excluir</button>`:''}
+    <button class="btn bp" onclick="svGr(${id||'null'})">Salvar</button>
+  </div>`,true);
+}
+async function svGr(id){
+  const nome=document.getElementById('gr-nome').value.trim();
+  if(!nome){snk('Informe o nome');return}
+  const gid=id&&id!=='null'?id:parseInt(document.getElementById('gr-id').value);
+  if(!gid){snk('Informe o código');return}
+  try{
+    if(id&&id!=='null') await sb('grupos_economicos','PATCH',{nome},`?id=eq.${id}`);
+    else await sb('grupos_economicos','POST',{id:gid,nome});
+    document.querySelector('.ov2')?.remove();snk('Salvo!');pages.grupos();
+  }catch(e){snk('Erro: '+e.message)}
+}
+async function dlGr(id){
+  if(!confirm('Excluir grupo? Os clientes ficarão sem grupo.'))return;
+  await sb('grupos_economicos','DELETE',null,`?id=eq.${id}`);
+  document.querySelector('.ov2')?.remove();snk('Excluído');pages.grupos();
+}
+
+// ── AUTOCOMPLETE DE CLIENTES ─────────────────────────────────────────────────
+function filtrarCliente(q){
+  const drop=document.getElementById('pc-drop');
+  if(!drop)return;
+  const termo=q.toLowerCase().trim();
+  const resultados=CL.filter(c=>
+    c.nome.toLowerCase().includes(termo)||
+    (c.codigo&&String(c.codigo).includes(termo))
+  ).slice(0,12);
+  if(!resultados.length||!termo){drop.style.display='none';return}
+  drop.innerHTML=resultados.map(c=>
+    `<div onclick="selecionarCliente(${c.id},'${c.nome.replace(/'/g,"\\'")}');event.stopPropagation()"
+      style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:.5px solid var(--bo)"
+      onmouseover="this.style.background='var(--bg2)'"
+      onmouseout="this.style.background=''">
+      ${c.codigo?`<span style="font-size:10px;color:var(--tx2);margin-right:6px">${c.codigo}</span>`:''}
+      ${c.nome}
+    </div>`
+  ).join('');
+  drop.style.display='block';
+}
+function selecionarCliente(id, nome){
+  const inp=document.getElementById('pc-txt');
+  const hid=document.getElementById('pc');
+  const drop=document.getElementById('pc-drop');
+  if(inp) inp.value=nome;
+  if(hid) hid.value=id;
+  if(drop) drop.style.display='none';
+}
+document.addEventListener('click', e=>{
+  const drop=document.getElementById('pc-drop');
+  if(drop&&!drop.contains(e.target)&&e.target.id!=='pc-txt') drop.style.display='none';
+});
+
+// Fechar modal com ESC
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') document.querySelector('.ov2')?.remove();
+});
+
+// ═══ AUTENTICAÇÃO ════════════════════════════════════════════════════════════
+const SESSION_KEY = 'grvs_user';
+
+function getSessao(){
+  try{ return JSON.parse(sessionStorage.getItem(SESSION_KEY)); }
+  catch(e){ return null; }
+}
+
+function setSessao(user){
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function encryptSenha(s){
+  // Hash simples para não trafegar senha em claro
+  let h=0;
+  for(let i=0;i<s.length;i++) h=(Math.imul(31,h)+s.charCodeAt(i))|0;
+  return Math.abs(h).toString(16).padStart(8,'0');
+}
+
+async function fazerLogin(){
+  const u=document.getElementById('lu').value.trim();
+  const p=document.getElementById('lp').value;
+  const err=document.getElementById('login-err');
+  const btn=document.querySelector('.login-btn');
+  if(!u||!p){err.style.display='block';err.textContent='Preencha usuário e senha';return}
+  btn.textContent='Verificando...';btn.disabled=true;
+  err.style.display='none';
+  try{
+    const hash=encryptSenha(p);
+    const rows=await sb('usuarios','GET',null,`?usuario=eq.${encodeURIComponent(u)}&senha_hash=eq.${hash}&ativo=eq.true`);
+    if(!rows||rows.length===0){
+      err.style.display='block';err.textContent='Usuário ou senha incorretos';
+      btn.textContent='Entrar';btn.disabled=false;return;
+    }
+    const user=rows[0];
+    setSessao({id:user.id,nome:user.nome,usuario:user.usuario});
+    // Registrar último acesso
+    await sb('usuarios','PATCH',{ultimo_acesso:new Date().toISOString()},`?id=eq.${user.id}`);
+    document.getElementById('login-wrap').style.display='none';
+    mostrarUsuario(user.nome);
+    go('dashboard');
+  }catch(e){
+    err.style.display='block';err.textContent='Erro: '+e.message;
+    btn.textContent='Entrar';btn.disabled=false;
+  }
+}
+
+function fazerLogout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+function mostrarUsuario(nome){
+  document.getElementById('user-info').innerHTML=`
+    <div class="user-badge">
+      <span>👤 <strong>${nome}</strong></span>
+      <button class="btn bs" onclick="fazerLogout()" title="Sair">Sair</button>
+    </div>`;
+}
+
+function verificarSessao(){
+  const sessao=getSessao();
+  if(sessao){
+    document.getElementById('login-wrap').style.display='none';
+    mostrarUsuario(sessao.nome);
+    go('dashboard');
+  }
+  // Se não tem sessão, mostra a tela de login (já visível por padrão)
+}
+
+// ═══ USUÁRIOS ═════════════════════════════════════════════════════════════════
+pages.usuarios=async function(){
+  document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmU()">+ Novo usuário</button>`;
+  try{
+    const rows=await sb('usuarios','GET',null,'?order=nome&select=id,nome,usuario,ativo,ultimo_acesso');
+    document.getElementById('ct').innerHTML=`<div class="card"><div class="ov"><table>
+      <thead><tr><th>Nome</th><th>Usuário</th><th>Status</th><th>Último acesso</th><th></th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td>${r.nome}</td>
+        <td><span class="chip">${r.usuario}</span></td>
+        <td><span class="badge ${r.ativo?'bgs':'bgd'}">${r.ativo?'Ativo':'Inativo'}</span></td>
+        <td style="font-size:11px;color:var(--tx2)">${r.ultimo_acesso?D(r.ultimo_acesso.split('T')[0]):'Nunca'}</td>
+        <td><button class="btn bs" onclick="fmU(${r.id})">Editar</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
+};
+async function fmU(id=null){
+  const u=id?(await sb('usuarios','GET',null,`?id=eq.${id}&select=id,nome,usuario,ativo`))[0]:{};
+  mdl(`<div class="rowb" style="margin-bottom:12px">
+    <span style="font-weight:500">${id?'Editar':'Novo'} usuário</span>
+    <button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button>
+  </div>
+  <div class="fg2">
+    <div class="fg" style="grid-column:span 2"><label>Nome completo</label><input id="un" value="${u.nome||''}"></div>
+    <div class="fg"><label>Usuário (login)</label><input id="uu" value="${u.usuario||''}" style="text-transform:lowercase"></div>
+    <div class="fg"><label>${id?'Nova senha (deixe em branco para manter)':'Senha'}</label><input type="password" id="up"></div>
+    <div class="fg"><label>Status</label><select id="ua">
+      <option value="true" ${u.ativo!==false?'selected':''}>Ativo</option>
+      <option value="false" ${u.ativo===false?'selected':''}>Inativo</option>
+    </select></div>
+  </div>
+  <div class="row" style="margin-top:14px;justify-content:flex-end;gap:8px">
+    ${id?`<button class="btn bs bdg" onclick="dlU(${id})">Excluir</button>`:''}
+    <button class="btn bp" onclick="svU(${id||'null'})">Salvar</button>
+  </div>`);
+}
+async function svU(id){
+  const nome=document.getElementById('un').value.trim();
+  const usuario=document.getElementById('uu').value.trim().toLowerCase();
+  const senha=document.getElementById('up').value;
+  const ativo=document.getElementById('ua').value==='true';
+  if(!nome||!usuario){snk('Preencha nome e usuário');return}
+  if(!id||id==='null'){if(!senha){snk('Informe a senha');return}}
+  const d={nome,usuario,ativo};
+  if(senha) d.senha_hash=encryptSenha(senha);
+  try{
+    if(id&&id!=='null') await sb('usuarios','PATCH',d,`?id=eq.${id}`);
+    else await sb('usuarios','POST',d);
+    document.querySelector('.ov2')?.remove();snk('Salvo!');pages.usuarios();
+  }catch(e){snk('Erro: '+e.message)}
+}
+async function dlU(id){
+  const sessao=getSessao();
+  if(sessao&&sessao.id===id){snk('Não é possível excluir o usuário logado');return}
+  if(!confirm('Excluir usuário?'))return;
+  await sb('usuarios','DELETE',null,`?id=eq.${id}`);
+  document.querySelector('.ov2')?.remove();snk('Excluído');pages.usuarios();
+}
+verificarSessao();
+</script>
+</body>
+</html>
