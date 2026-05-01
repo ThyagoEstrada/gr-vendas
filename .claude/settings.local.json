@@ -4,7 +4,12 @@
       "PowerShell([Convert]::ToBase64String\\([System.IO.File]::ReadAllBytes\\(\"C:\\\\gr-vendas\\\\transcrever_pedidos.py\"\\)\\))",
       "PowerShell([Convert]::ToBase64String\\([System.IO.File]::ReadAllBytes\\(\"C:\\\\gr-vendas\\\\importar_pdfs.py\"\\)\\))",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)"
     ]
   }
 }
