@@ -102,6 +102,9 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
 .login-err{background:var(--bgd);color:var(--txd);border-radius:var(--r);padding:8px 12px;font-size:12px;margin-bottom:12px;display:none}
 .user-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)}
 .user-badge strong{color:var(--tx)}
+.voz-opt{padding:8px 10px;cursor:pointer;font-size:12px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+.voz-opt:hover{background:var(--bg2)}
+.voz-opt.sel{background:var(--bgi);color:var(--txi);font-weight:500}
 /* ── MOBILE ────────────────────────────────────────────────────────────────── */
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:49;cursor:pointer}
 #sb-tog{display:none;background:none;border:none;font-size:22px;line-height:1;padding:0 4px;cursor:pointer;color:var(--tx);flex-shrink:0;-webkit-tap-highlight-color:transparent}
@@ -660,14 +663,27 @@ function vTop5(nome){
     return{c,s};
   }).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.c);
 }
+function vOptItem(c,idx,r){
+  const sel=r&&r.cliente_id==c.id;
+  return`<div class="voz-opt${sel?' sel':''}" onclick="vSelecionarCliente(${idx},${c.id})">${c.nome}</div>`;
+}
 function vDropdown(idx,r){
   const top5=vTop5(r.cliente_raw);
-  const sel=r.cliente_id&&r.cliente_id!=='__novo__'?r.cliente_id:'';
-  return`<select onchange="vSelecionarCliente(${idx},this.value)" style="margin-top:4px;width:100%;max-width:260px;padding:4px 6px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:12px">
-    <option value="">— Selecionar cliente —</option>
-    <option value="__novo__"${r.cliente_id==='__novo__'?' selected':''}>— Cadastrar como novo cliente —</option>
-    ${top5.map(c=>`<option value="${c.id}"${sel==c.id?' selected':''}>${c.nome}</option>`).join('')}
-  </select>`;
+  return`<div style="margin-top:4px;max-width:280px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);overflow:hidden">
+    <div class="voz-opt" style="color:var(--txi);font-weight:500;border-bottom:.5px solid var(--bo)" onclick="vSelecionarCliente(${idx},'__novo__')">+ Cadastrar como novo cliente</div>
+    <input type="text" placeholder="🔍 Buscar cliente..." oninput="vFiltrarClientes(this,${idx})" onclick="event.stopPropagation()" style="width:100%;padding:7px 10px;border:none;border-bottom:.5px solid var(--bo);font-size:16px;background:var(--bg2);color:var(--tx);font-family:inherit;outline:none">
+    <div id="voz-opts-${idx}" style="max-height:200px;overflow-y:auto">
+      ${top5.map(c=>vOptItem(c,idx,r)).join('')}
+    </div>
+  </div>`;
+}
+function vFiltrarClientes(input,idx){
+  const q=input.value.trim().toUpperCase();
+  const el=document.getElementById(`voz-opts-${idx}`);
+  if(!el)return;
+  const r=VOZ_RESULTADO[idx];
+  const lista=q?CL.filter(c=>c.nome.toUpperCase().includes(q)).slice(0,8):vTop5(r.cliente_raw);
+  el.innerHTML=lista.length?lista.map(c=>vOptItem(c,idx,r)).join(''):`<div style="padding:8px 10px;font-size:12px;color:var(--tx2)">Nenhum resultado</div>`;
 }
 function vCelCliente(r,i){
   const raw=`<div style="font-size:11px;color:var(--tx2)">${r.cliente_raw}</div>`;
