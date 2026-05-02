@@ -1459,7 +1459,7 @@ async function fmU(id=null){
   </div>
   <div class="fg2">
     <div class="fg" style="grid-column:span 2"><label>Nome completo</label><input id="un" value="${u.nome||''}"></div>
-    <div class="fg"><label>Usuário (login)</label><input id="uu" value="${u.usuario||''}" style="text-transform:lowercase"></div>
+    <div class="fg"><label>Usuário (login)</label><input id="uu" value="${u.usuario||''}" autocomplete="off"></div>
     <div class="fg"><label>${id?'Nova senha (deixe em branco para manter)':'Senha'}</label><input type="password" id="up"></div>
     <div class="fg"><label>Status</label><select id="ua">
       <option value="true" ${u.ativo!==false?'selected':''}>Ativo</option>
@@ -1473,14 +1473,20 @@ async function fmU(id=null){
 }
 async function svU(id){
   const nome=document.getElementById('un').value.trim();
-  const usuario=document.getElementById('uu').value.trim().toLowerCase();
+  const usuario=document.getElementById('uu').value.trim();
   const senha=document.getElementById('up').value;
   const ativo=document.getElementById('ua').value==='true';
-  if(!nome||!usuario){snk('Preencha nome e usuário');return}
+  if(!nome){snk('Informe o nome');return}
+  if(!usuario){snk('Informe o login');return}
+  if(usuario.length<3){snk('Login deve ter no mínimo 3 caracteres');return}
   if(!id||id==='null'){if(!senha){snk('Informe a senha');return}}
-  const d={nome,usuario,ativo};
-  if(senha) d.senha_hash=await encryptSenha(senha);
   try{
+    // Verificar unicidade do login (excluindo o próprio registro ao editar)
+    const existe=await sb('usuarios','GET',null,`?usuario=eq.${encodeURIComponent(usuario)}&select=id`);
+    const conflito=existe.filter(u=>u.id!=(id&&id!=='null'?id:0));
+    if(conflito.length){snk('Login já está em uso por outro usuário');return}
+    const d={nome,usuario,ativo};
+    if(senha) d.senha_hash=await encryptSenha(senha);
     if(id&&id!=='null') await sb('usuarios','PATCH',d,`?id=eq.${id}`);
     else await sb('usuarios','POST',d);
     document.querySelector('.ov2')?.remove();snk('Salvo!');pages.usuarios();
