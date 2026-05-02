@@ -105,6 +105,11 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
 .voz-opt{padding:8px 10px;cursor:pointer;font-size:12px;line-height:1.4;-webkit-tap-highlight-color:transparent}
 .voz-opt:hover{background:var(--bg2)}
 .voz-opt.sel{background:var(--bgi);color:var(--txi);font-weight:500}
+.rq-card{background:var(--bg);border:.5px solid var(--bo);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px}
+.rq-label{font-size:11px;color:var(--tx2);margin-bottom:6px;font-weight:500;display:block}
+.rq-btn{display:inline-flex;align-items:center;justify-content:center;min-width:48px;min-height:44px;padding:0 12px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.rq-btn.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.rq-btn:hover:not(.on){background:var(--bg2)}
 /* ── MOBILE ────────────────────────────────────────────────────────────────── */
 #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:49;cursor:pointer}
 #sb-tog{display:none;background:none;border:none;font-size:22px;line-height:1;padding:0 4px;cursor:pointer;color:var(--tx);flex-shrink:0;-webkit-tap-highlight-color:transparent}
@@ -169,6 +174,7 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
     <div class="ni" data-p="grupos"><span>🏢</span><span>Grupos</span></div>
     <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div></div>
   <div class="ns"><div class="nl">Vendas</div>
+    <div class="ni" data-p="rapido" style="color:var(--txi)"><span>⚡</span><span>Lançamento Rápido</span></div>
     <div class="ni" data-p="pedidos"><span>📦</span><span>Pedidos</span></div>
     <div class="ni" data-p="voz"><span>🎙️</span><span>Por Voz</span></div>
     <div class="ni" data-p="programados"><span>📅</span><span>Programados</span></div>
@@ -307,7 +313,7 @@ function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`
 
 let CC=[],TC=[],CL=[],SC=[];
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido'};
 
 async function go(p){
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===p));
@@ -1555,6 +1561,197 @@ async function dlU(id){
   await sb('usuarios','DELETE',null,`?id=eq.${id}`);
   document.querySelector('.ov2')?.remove();snk('Excluído');pages.usuarios();
 }
+// ── LANÇAMENTO RÁPIDO ────────────────────────────────────────────────────────
+let RQ_TAB='',RQ_PCT=null,RQ_CLI_ID=null,RQ_CLI_NOME='',RQ_HOJE=0;
+pages.rapido=async function(){
+  try{const p=await sb('pedidos','GET',null,`?data_pedido=eq.${T()}&select=id`);RQ_HOJE=p.length;}catch(e){RQ_HOJE=0;}
+  RQ_TAB='';RQ_PCT=null;RQ_CLI_ID=null;RQ_CLI_NOME='';
+  document.getElementById('ta').innerHTML='';
+  document.getElementById('ct').innerHTML=`
+  <div style="font-size:12px;color:var(--tx2);margin-bottom:10px;padding:8px 12px;background:var(--bg);border-radius:var(--r);border:.5px solid var(--bo)">
+    ⚡ <strong id="rq-cnt">${RQ_HOJE}</strong> pedido(s) lançado(s) hoje
+  </div>
+  <div class="rq-card">
+    <label class="rq-label">Cliente</label>
+    <div style="position:relative">
+      <input id="rq-cli-txt" type="text" placeholder="Nome ou código..." autocomplete="off"
+        oninput="rqFiltrarCliente(this.value)" onfocus="rqFiltrarCliente(this.value)"
+        style="font-size:16px;padding:10px 12px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit;width:100%">
+      <input type="hidden" id="rq-cli">
+      <div id="rq-cli-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg);border:.5px solid var(--bo2);border-radius:var(--r);max-height:220px;overflow-y:auto;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
+    </div>
+    <div id="rq-cli-novo" style="display:none;margin-top:8px">
+      <button class="btn bs" onclick="rqMostrarFormCliente()">+ Cadastrar novo cliente</button>
+    </div>
+    <div id="rq-form-cli" style="display:none;margin-top:10px;padding:12px;background:var(--bg2);border-radius:var(--r)">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Novo cliente</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="rq-nc-nome" placeholder="Nome *" style="font-size:16px;padding:8px 10px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit">
+        <div style="display:flex;gap:8px">
+          <input id="rq-nc-cod" type="number" placeholder="Código *" style="width:110px;font-size:16px;padding:8px 10px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit">
+          <select id="rq-nc-cid" style="flex:1;font-size:16px;padding:8px 10px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit">
+            <option value="">— Cidade —</option>
+            ${CC.map(c=>`<option value="${c.id}">${c.cidade}${c.estado?' - '+c.estado:''}</option>`).join('')}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn bp" style="flex:1;min-height:44px" onclick="rqSalvarNovoCliente()">✓ Cadastrar</button>
+          <button class="btn bs" style="min-height:44px" onclick="document.getElementById('rq-form-cli').style.display='none'">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="rq-card">
+    <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+      <div class="fg" style="flex:1;min-width:140px">
+        <label class="rq-label">Data do pedido</label>
+        <input type="date" id="rq-data" value="${T()}" style="font-size:16px;padding:8px 10px">
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;padding-bottom:8px;white-space:nowrap">
+        <input type="checkbox" id="rq-prog" onchange="rqToggleProgram()" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
+        Programado
+      </label>
+    </div>
+    <div id="rq-entrega-wrap" style="display:none;margin-top:10px">
+      <div class="fg">
+        <label class="rq-label">Data de entrega</label>
+        <input type="date" id="rq-entrega" style="font-size:16px;padding:8px 10px">
+      </div>
+    </div>
+  </div>
+  <div class="rq-card">
+    <label class="rq-label">Valor (R$)</label>
+    <input type="number" id="rq-val" inputmode="decimal" placeholder="0,00" step="0.01" min="0"
+      style="font-size:24px;font-weight:500;padding:12px 14px;border:.5px solid var(--bo2);border-radius:var(--r);width:100%;background:var(--bg);color:var(--tx);font-family:inherit;text-align:right">
+  </div>
+  <div class="rq-card">
+    <label class="rq-label">Tabela</label>
+    <div id="rq-tabs-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <label class="rq-label">Percentual</label>
+    <div id="rq-pct-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <span style="font-size:12px;color:var(--tx2)">Personalizado:</span>
+      <input type="number" id="rq-pct-custom" step="0.5" min="0" max="20" placeholder="0"
+        oninput="RQ_PCT=parseFloat(this.value)||0;rqRenderPct()"
+        style="width:80px;padding:6px 8px;border:.5px solid var(--bo2);border-radius:var(--r);font-size:14px;background:var(--bg);color:var(--tx);font-family:inherit">
+      <span style="font-size:13px;color:var(--tx2)">%</span>
+    </div>
+  </div>
+  <div class="rq-card">
+    <label class="rq-label">Observação (opcional)</label>
+    <input id="rq-obs" placeholder="Ex: urgente, retirada..." style="font-size:14px;padding:8px 10px">
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:24px">
+    <button class="btn bp" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(true)">✅ Salvar e próximo</button>
+    <button class="btn" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(false)">💾 Salvar e fechar</button>
+  </div>`;
+  rqRenderTabs();rqRenderPct();
+};
+function rqRenderTabs(){
+  const el=document.getElementById('rq-tabs-btns');if(!el)return;
+  el.innerHTML=['A','B','C','D','E','F'].map(l=>`<button class="rq-btn${RQ_TAB===l?' on':''}" onclick="rqSetTab('${l}')">${l}</button>`).join('');
+}
+function rqRenderPct(){
+  const el=document.getElementById('rq-pct-btns');if(!el)return;
+  const ps=[2,2.5,3,3.5,4,4.5,0];
+  el.innerHTML=ps.map(p=>{
+    const lbl=p===0?'X':String(p).replace('.',',')+'%';
+    return`<button class="rq-btn${RQ_PCT===p?' on':''}" onclick="rqSetPct(${p})">${lbl}</button>`;
+  }).join('');
+}
+function rqSetTab(l){RQ_TAB=l;rqRenderTabs();}
+function rqSetPct(p){RQ_PCT=p;const ci=document.getElementById('rq-pct-custom');if(ci)ci.value='';rqRenderPct();}
+function rqToggleProgram(){
+  const w=document.getElementById('rq-entrega-wrap');
+  if(w)w.style.display=document.getElementById('rq-prog')?.checked?'block':'none';
+}
+function rqFiltrarCliente(q){
+  const drop=document.getElementById('rq-cli-drop'),btnNovo=document.getElementById('rq-cli-novo');
+  if(!drop)return;
+  const t=q.toLowerCase().trim();
+  if(!t){drop.style.display='none';if(btnNovo)btnNovo.style.display='none';return}
+  const res=CL.filter(c=>c.nome.toLowerCase().includes(t)||(c.codigo&&String(c.codigo).includes(t))).slice(0,10);
+  if(!res.length){
+    drop.style.display='none';
+    if(btnNovo){btnNovo.style.display='block';btnNovo.querySelector('button').textContent=`+ Cadastrar "${q}"`;}
+    const nc=document.getElementById('rq-nc-nome');if(nc&&!nc.value)nc.value=q;
+    return;
+  }
+  if(btnNovo)btnNovo.style.display='none';
+  drop.innerHTML=res.map(c=>`<div onclick="rqSelecionarCliente(${c.id},'${c.nome.replace(/'/g,"\\'")}');event.stopPropagation()"
+    style="padding:10px 12px;cursor:pointer;font-size:14px;border-bottom:.5px solid var(--bo)"
+    onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+    ${c.codigo?`<span style="font-size:11px;color:var(--tx2);margin-right:6px">${c.codigo}</span>`:''}${c.nome}
+  </div>`).join('');
+  drop.style.display='block';
+}
+function rqSelecionarCliente(id,nome){
+  RQ_CLI_ID=id;RQ_CLI_NOME=nome;
+  const t=document.getElementById('rq-cli-txt'),h=document.getElementById('rq-cli'),
+        d=document.getElementById('rq-cli-drop'),b=document.getElementById('rq-cli-novo');
+  if(t)t.value=nome;if(h)h.value=id;if(d)d.style.display='none';if(b)b.style.display='none';
+}
+function rqMostrarFormCliente(){
+  const f=document.getElementById('rq-form-cli');if(f)f.style.display='block';
+  const t=document.getElementById('rq-cli-txt'),n=document.getElementById('rq-nc-nome');
+  if(t&&n&&!n.value)n.value=t.value;
+}
+async function rqSalvarNovoCliente(){
+  const nome=(document.getElementById('rq-nc-nome')?.value||'').trim();
+  const codigo=(document.getElementById('rq-nc-cod')?.value||'').trim();
+  const cidade_id=document.getElementById('rq-nc-cid')?.value||null;
+  if(!nome){snk('Informe o nome do cliente');return}
+  if(!codigo){snk('Informe o código do cliente');return}
+  try{
+    const novo=await sb('clientes','POST',{nome,codigo:parseInt(codigo),cidade_id:cidade_id?parseInt(cidade_id):null,status:'ativo'});
+    const id=novo[0].id;
+    CL.push({id,nome,status:'ativo',codigo:parseInt(codigo)});
+    CL.sort((a,b)=>a.nome.localeCompare(b.nome));
+    rqSelecionarCliente(id,nome);
+    document.getElementById('rq-form-cli').style.display='none';
+    snk(`Cliente "${nome}" cadastrado!`);
+  }catch(e){snk('Erro: '+e.message)}
+}
+async function rqSalvar(proximo){
+  const cid=document.getElementById('rq-cli')?.value;
+  const val=parseFloat(document.getElementById('rq-val')?.value||0);
+  const data=document.getElementById('rq-data')?.value||T();
+  const prog=document.getElementById('rq-prog')?.checked;
+  const entrega=prog?(document.getElementById('rq-entrega')?.value||''):'';
+  const obs=(document.getElementById('rq-obs')?.value||'').trim();
+  if(!cid){snk('Selecione o cliente');document.getElementById('rq-cli-txt')?.focus();return}
+  if(!val||val<=0){snk('Informe o valor');document.getElementById('rq-val')?.focus();return}
+  if(!RQ_TAB){snk('Selecione a tabela');return}
+  if(prog&&!entrega){snk('Informe a data de entrega');return}
+  const pct=RQ_PCT??0;
+  const btns=document.querySelectorAll('[onclick^="rqSalvar"]');
+  btns.forEach(b=>b.disabled=true);
+  try{
+    await sb('pedidos','POST',{data_pedido:data,cliente_id:parseInt(cid),valor_total:val,
+      status:'Pendente',tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
+      observacao:obs?`Rápido|Tab:${RQ_TAB}${pct}%|${obs}`:`Rápido|Tab:${RQ_TAB}${pct}%`});
+    RQ_HOJE++;
+    const cnt=document.getElementById('rq-cnt');if(cnt)cnt.textContent=RQ_HOJE;
+    const label=RQ_CLI_NOME.length>22?RQ_CLI_NOME.slice(0,22)+'…':RQ_CLI_NOME;
+    snk(`✅ ${label} — ${R(val)}`);
+    if(proximo){
+      RQ_CLI_ID=null;RQ_CLI_NOME='';RQ_TAB='';RQ_PCT=null;
+      ['rq-cli-txt','rq-val','rq-obs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+      const h=document.getElementById('rq-cli');if(h)h.value='';
+      const p=document.getElementById('rq-prog');if(p)p.checked=false;
+      const ew=document.getElementById('rq-entrega-wrap');if(ew)ew.style.display='none';
+      const ci=document.getElementById('rq-pct-custom');if(ci)ci.value='';
+      rqRenderTabs();rqRenderPct();
+      setTimeout(()=>document.getElementById('rq-cli-txt')?.focus(),50);
+    }else{go('pedidos');}
+  }catch(e){snk('Erro ao salvar: '+e.message);}
+  finally{btns.forEach(b=>b.disabled=false);}
+}
+document.addEventListener('click',e=>{
+  const d=document.getElementById('rq-cli-drop');
+  if(d&&!d.contains(e.target)&&e.target.id!=='rq-cli-txt')d.style.display='none';
+});
+
 function sbToggle(){
   const sb=document.querySelector('.sb'),ov=document.getElementById('sb-overlay');
   const open=sb.classList.toggle('open');
