@@ -128,6 +128,7 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
     <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div></div>
   <div class="ns"><div class="nl">Vendas</div>
     <div class="ni" data-p="pedidos"><span>📦</span><span>Pedidos</span></div>
+    <div class="ni" data-p="voz"><span>🎙️</span><span>Por Voz</span></div>
     <div class="ni" data-p="programados"><span>📅</span><span>Programados</span></div>
     <div class="ni" data-p="comissoes"><span>💰</span><span>Comissões</span></div></div>
   <div class="ns"><div class="nl">Relatórios</div>
@@ -263,7 +264,7 @@ function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`
 
 let CC=[],TC=[],CL=[],SC=[];
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>go(e.dataset.p)));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz'};
 
 async function go(p){
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===p));
@@ -481,6 +482,164 @@ async function svP(id){
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
 }
 async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
+
+// ── IMPORTAÇÃO POR VOZ ────────────────────────────────────────────────────────
+const MESES_V={janeiro:1,fevereiro:2,'março':3,marco:3,abril:4,maio:5,junho:6,julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12,jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+function vSplit(b){return b.replace(/(\d),(\d)/g,'$1§$2').split(',').map(p=>p.trim().replace(/§/g,','));}
+function vValor(t){
+  t=t.toLowerCase().trim();let cent=0;
+  const mc=t.match(/\be\s+(\d{1,2})(?:\s*centavos?)?\s*$/);
+  if(mc){const cn=+mc[1];cent=cn>=10?cn/100:cn/10;t=t.slice(0,mc.index).trim();}
+  let v=0;
+  const mm=t.match(/(\d+)\s*milh[ãa]o/);if(mm){v+=+mm[1]*1e6;t=t.replace(/\d+\s*milh[ãa]o/,'').trim();}
+  const mk=t.match(/(\d+)\s*mil/);if(mk){v+=+mk[1]*1000;t=t.replace(/\d+\s*mil/,'').trim();}
+  const mn=t.match(/(\d+(?:[.,]\d+)?)/);if(mn)try{v+=parseFloat(mn[1].replace(',','.'))}catch(e){}
+  return Math.round((v+cent)*100)/100;
+}
+function vData(t,ano){
+  t=t.toLowerCase().trim();
+  let m=t.match(/^(\d{1,2})\s+d[oe]\s+(\d{1,2})(?!\d)/);
+  if(m){const d=+m[1],ms=+m[2];if(d>=1&&d<=31&&ms>=1&&ms<=12)return`${ano}-${String(ms).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  for(const[nm,num]of Object.entries(MESES_V)){const re=new RegExp(`^(\\d{1,2})\\s+de\\s+${nm}(?!\\w)`);const m2=t.match(re);if(m2){const d=+m2[1];if(d>=1&&d<=31)return`${ano}-${String(num).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}}
+  if(t.includes('hoje'))return T();
+  return null;
+}
+function vTabela(t){
+  t=t.toLowerCase().trim().replace(/^tab(?:ela)?\s*/,'');
+  let m=t.match(/^(\d{2,4})\s+d\s*(\d+(?:[.,]\d+)?)/);if(m)return[m[1],parseFloat(m[2].replace(',','.'))];
+  m=t.match(/^([a-f])\s+(\d+(?:[.,]\d+)?)/);if(m)return[m[1].toUpperCase(),parseFloat(m[2].replace(',','.'))];
+  m=t.match(/^([a-f]|\d{2,4})\s+x/);if(m)return[m[1].toUpperCase(),0];
+  return['',0];
+}
+function vPedido(bloco,ano){
+  bloco=bloco.replace(/\s+/g,' ').toLowerCase().trim();
+  if(bloco.length<5)return null;
+  const res={data:T(),cliente_raw:'',valor:0,tabela:'',percentual:0,tipo:'Normal',data_entrega:null};
+  const ps=vSplit(bloco);
+  if(ps[0].trim()==='programado'){res.tipo='Programado';ps.shift();}
+  for(const p of ps){
+    const pt=p.trim();if(!pt)continue;
+    if(pt.startsWith('data ')){const d=vData(pt.slice(5),ano);if(d)res.data=d;}
+    else if(/^\d{1,2}\s+d[oe]\s+\d{1,2}/.test(pt)){const d=vData(pt,ano);if(d)res.data=d;}
+    else if(pt.startsWith('cliente ')){res.cliente_raw=pt.slice(8).trim().toUpperCase();}
+    else if(/^v(?:alor)?\s+/.test(pt)){res.valor=vValor(pt.replace(/^v(?:alor)?\s+/,''));}
+    else if(/^tab(?:ela)?\s+/.test(pt)){const[tab,pct]=vTabela(pt);res.tabela=tab;res.percentual=pct;}
+    else if(pt.startsWith('entrega ')){const d=vData(pt.slice(8),ano);if(d)res.data_entrega=d;}
+  }
+  if(!res.cliente_raw||res.valor<=0)return null;
+  return res;
+}
+function vAudio(txt,ano){return txt.replace(/\s+/g,' ').toLowerCase().trim().split(/novo\s+pedido|pr[oó]ximo\s+pedido/).map(b=>vPedido(b,ano)).filter(Boolean);}
+function vSim(a,b){
+  a=a.toUpperCase().trim();b=b.toUpperCase().trim();
+  if(a===b)return 1;if(a.includes(b)||b.includes(a))return 0.9;
+  const pa=new Set(a.split(/\s+/)),pb=new Set(b.split(/\s+/));
+  if(pa.size&&[...pa].every(w=>pb.has(w)))return 0.85;
+  const la=a.length,lb=b.length;if(!la||!lb)return 0;
+  const dp=Array.from({length:la+1},(_,i)=>Array.from({length:lb+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=la;i++)for(let j=1;j<=lb;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return 1-dp[la][lb]/Math.max(la,lb);
+}
+function vCliente(nome,cl){
+  nome=nome.toUpperCase().trim();let melhor=null,score=0;
+  for(const c of cl){
+    const db=c.nome.toUpperCase().trim();
+    let s=nome===db?1:nome.includes(db)||db.includes(nome)?0.9:vSim(nome,db);
+    const pa=new Set(nome.split(/\s+/)),pb=new Set(db.split(/\s+/));
+    if(pa.size&&[...pa].every(w=>pb.has(w)))s=Math.max(s,0.85);
+    if(s>score){score=s;melhor=c;}
+  }
+  return{c:melhor,s:score};
+}
+let VOZ_RESULTADO=[];
+pages.voz=async function(){
+  document.getElementById('ct').innerHTML=`
+  <div class="card">
+    <div style="font-weight:600;font-size:15px;margin-bottom:10px">Padrão de ditado</div>
+    <div style="font-family:monospace;font-size:13px;background:var(--bg2);border-radius:var(--r);padding:10px 14px;line-height:1.9;margin-bottom:8px">
+      Novo pedido, cliente NOME, valor VALOR, tabela TAB PERC.<br>
+      Novo pedido programado, cliente NOME, valor VALOR, tabela TAB PERC, entrega DD do MM.
+    </div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">Exemplos:</div>
+    <div style="font-family:monospace;font-size:12px;line-height:1.8;border-left:3px solid var(--txi);padding:8px 12px;background:var(--bgi);color:var(--txi);border-radius:0 var(--r) var(--r) 0;margin-bottom:16px">
+      "Novo pedido, cliente Bassano Alimentos, valor 7 mil 669 e 20, tabela D 3,5."<br>
+      "Novo pedido programado, cliente Granja Rio Claro, valor 73 mil 700, tabela 125 D 2, entrega 15 do 05."
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <label style="font-size:13px;color:var(--tx2)">Ano dos pedidos</label>
+      <input type="number" id="voz-ano" value="${new Date().getFullYear()}" style="width:90px;padding:6px 8px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx)">
+    </div>
+    <textarea id="voz-txt" rows="7" placeholder="Cole aqui o texto do iPhone..." style="width:100%;padding:10px;border:.5px solid var(--bo2);border-radius:var(--r);font-size:14px;background:var(--bg);color:var(--tx);resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+    <div class="row" style="margin-top:12px;gap:8px">
+      <button class="btn bp" onclick="processarVoz()">🔍 Processar</button>
+      <button class="btn bs" onclick="document.getElementById('voz-txt').value='';document.getElementById('voz-preview').innerHTML='';VOZ_RESULTADO=[]">❌ Cancelar</button>
+    </div>
+  </div>
+  <div id="voz-preview"></div>`;
+};
+function processarVoz(){
+  const txt=document.getElementById('voz-txt').value.trim();
+  const ano=parseInt(document.getElementById('voz-ano').value)||new Date().getFullYear();
+  const prev=document.getElementById('voz-preview');
+  if(!txt){snk('Cole o texto antes de processar');return}
+  if(!CL.length){snk('Lista de clientes não carregada');return}
+  const pedidos=vAudio(txt,ano);
+  if(!pedidos.length){prev.innerHTML=`<div class="al alr" style="margin-top:12px">Nenhum pedido encontrado. Verifique o padrão: inicie cada item com "Novo pedido".</div>`;return}
+  VOZ_RESULTADO=pedidos.map((p,i)=>{const{c,s}=vCliente(p.cliente_raw,CL);return{...p,idx:i+1,cliente_id:c?.id||null,cliente_nome:c?.nome||p.cliente_raw,match_score:s};});
+  const bg=s=>s>=0.85?'var(--bgs)':s>=0.60?'var(--bgw)':'var(--bgd)';
+  const bc=s=>s>=0.85?'bgs':s>=0.60?'bgw':'bgd';
+  prev.innerHTML=`
+  <div class="card" style="margin-top:12px">
+    <div class="rowb" style="margin-bottom:10px">
+      <span style="font-weight:600">${VOZ_RESULTADO.length} pedido(s) identificado(s)</span>
+      <div class="row" style="gap:6px;font-size:11px">
+        <span class="badge bgs">verde &gt;85%</span>
+        <span class="badge bgw">amarelo 60–85%</span>
+        <span class="badge bgd">vermelho &lt;60%</span>
+      </div>
+    </div>
+    <div class="ov"><table><thead><tr>
+      <th>#</th><th>Data</th><th>Cliente encontrado</th><th>Match%</th><th>Valor</th><th>Tab</th><th>%</th><th>Tipo</th><th>Entrega</th>
+    </tr></thead>
+    <tbody>${VOZ_RESULTADO.map(r=>`<tr style="background:${bg(r.match_score)}">
+      <td>${r.idx}</td>
+      <td>${D(r.data)}</td>
+      <td><div style="font-size:11px;color:var(--tx2)">${r.cliente_raw}</div><strong>${r.match_score>=0.60?r.cliente_nome:'Não encontrado'}</strong></td>
+      <td><span class="badge ${bc(r.match_score)}">${Math.round(r.match_score*100)}%</span></td>
+      <td>${R(r.valor)}</td>
+      <td>${r.tabela||'—'}</td>
+      <td>${r.percentual||0}%</td>
+      <td>${r.tipo==='Programado'?'<span class="badge bgi">📅 Prog.</span>':'Normal'}</td>
+      <td>${r.data_entrega?D(r.data_entrega):'—'}</td>
+    </tr>`).join('')}
+    </tbody></table></div>
+    <div style="margin-top:14px;display:flex;justify-content:flex-end">
+      <button class="btn bp voz-confirm" onclick="confirmarVoz()">✅ Confirmar e salvar</button>
+    </div>
+  </div>`;
+}
+async function confirmarVoz(){
+  const ok=VOZ_RESULTADO.filter(p=>p.match_score>=0.60);
+  const nok=VOZ_RESULTADO.filter(p=>p.match_score<0.60);
+  if(!ok.length){snk('Nenhum pedido com cliente identificado para salvar');return}
+  const btn=document.querySelector('.voz-confirm');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  let salvos=0,erros=0;
+  for(const p of ok){
+    try{
+      await sb('pedidos','POST',{data_pedido:p.data,cliente_id:p.cliente_id,valor_total:p.valor,status:'Pendente',tipo:p.tipo,data_entrega:p.data_entrega||null,observacao:`Voz | Tab: ${p.tabela} ${p.percentual}%`});
+      salvos++;
+    }catch(e){erros++;}
+  }
+  document.querySelector('.voz-confirm')?.remove();
+  document.getElementById('voz-preview').insertAdjacentHTML('beforeend',
+    `<div class="al ${erros||nok.length?'alw':'als'}" style="margin-top:10px">
+      ✅ ${salvos} pedido(s) salvo(s)${nok.length?` — ${nok.length} ignorado(s) (cliente não encontrado)`:''}${erros?` — ${erros} erro(s) ao salvar`:''}
+    </div>`);
+  snk(`${salvos} pedido(s) salvos`);
+  VOZ_RESULTADO=[];
+}
+
 let micOn=false,rec=null;
 function togMic(){
   const b=document.getElementById('mc'),h=document.getElementById('mh');
