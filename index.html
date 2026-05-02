@@ -487,18 +487,35 @@ async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE
 const MESES_V={janeiro:1,fevereiro:2,'março':3,marco:3,abril:4,maio:5,junho:6,julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12,jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
 function vSplit(b){return b.replace(/(\d),(\d)/g,'$1§$2').split(',').map(p=>p.trim().replace(/§/g,','));}
 function vValor(t){
-  t=t.toLowerCase().trim();let cent=0;
+  t=t.toLowerCase().trim();
+  // Remove padrões de hora (12h20, 8h30) que o iPhone pode ditar junto ao valor
+  t=t.replace(/\b\d{1,2}h\d{2}\b/g,'').replace(/\s+/g,' ').trim();
+  let cent=0;
   const mc=t.match(/\be\s+(\d{1,2})(?:\s*centavos?)?\s*$/);
   if(mc){const cn=+mc[1];cent=cn>=10?cn/100:cn/10;t=t.slice(0,mc.index).trim();}
   let v=0;
   const mm=t.match(/(\d+)\s*milh[ãa]o/);if(mm){v+=+mm[1]*1e6;t=t.replace(/\d+\s*milh[ãa]o/,'').trim();}
   const mk=t.match(/(\d+)\s*mil/);if(mk){v+=+mk[1]*1000;t=t.replace(/\d+\s*mil/,'').trim();}
+  // "713 80" → 713.80: iPhone omite a vírgula, segundo número < 100 são centavos
+  if(!cent){const m2=t.match(/^(\d+)\s+(\d{1,2})$/);if(m2&&+m2[2]<100){const cn=+m2[2];return Math.round((v+(+m2[1])+(cn>=10?cn/100:cn/10))*100)/100;}}
   const mn=t.match(/(\d+(?:[.,]\d+)?)/);if(mn)try{v+=parseFloat(mn[1].replace(',','.'))}catch(e){}
   return Math.round((v+cent)*100)/100;
 }
+const NUM_V={dois:2,tres:3,'três':3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,meio:0.5};
+function vNumExt(t){
+  t=t.trim();
+  const me=t.match(/^(\w+)\s+e\s+meio$/);if(me){const b=NUM_V[me[1]];if(b!==undefined)return b+0.5;}
+  if(NUM_V[t]!==undefined)return NUM_V[t];
+  if(/^\d+(?:[.,]\d+)?$/.test(t))return parseFloat(t.replace(',','.'));
+  return null;
+}
 function vData(t,ano){
   t=t.toLowerCase().trim();
-  let m=t.match(/^(\d{1,2})\s+d[oe]\s+(\d{1,2})(?!\d)/);
+  // DD/MM/YYYY ou DD/MM
+  let m=t.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if(m){const d=+m[1],ms=+m[2],yr=m[3]?(+m[3]<100?2000+(+m[3]):+m[3]):ano;if(d>=1&&d<=31&&ms>=1&&ms<=12)return`${yr}-${String(ms).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+  // "DD do/de MM"
+  m=t.match(/^(\d{1,2})\s+d[oe]\s+(\d{1,2})(?!\d)/);
   if(m){const d=+m[1],ms=+m[2];if(d>=1&&d<=31&&ms>=1&&ms<=12)return`${ano}-${String(ms).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
   for(const[nm,num]of Object.entries(MESES_V)){const re=new RegExp(`^(\\d{1,2})\\s+de\\s+${nm}(?!\\w)`);const m2=t.match(re);if(m2){const d=+m2[1];if(d>=1&&d<=31)return`${ano}-${String(num).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}}
   if(t.includes('hoje'))return T();
@@ -506,25 +523,35 @@ function vData(t,ano){
 }
 function vTabela(t){
   t=t.toLowerCase().trim().replace(/^tab(?:ela)?\s*/,'');
-  let m=t.match(/^(\d{2,4})\s+d\s*(\d+(?:[.,]\d+)?)/);if(m)return[m[1],parseFloat(m[2].replace(',','.'))];
-  m=t.match(/^([a-f])\s+(\d+(?:[.,]\d+)?)/);if(m)return[m[1].toUpperCase(),parseFloat(m[2].replace(',','.'))];
-  m=t.match(/^([a-f]|\d{2,4})\s+x/);if(m)return[m[1].toUpperCase(),0];
+  // Formas compactas: "c2", "d3", "dx"
+  let m=t.match(/^([a-f])(\d+(?:[.,]\d+)?)$/);if(m)return[m[1].toUpperCase(),parseFloat(m[2].replace(',','.'))];
+  m=t.match(/^([a-f])x$/);if(m)return[m[1].toUpperCase(),0];
+  // Prefixo numérico: "108 d 2", "108 de dois", "108 dx"
+  m=t.match(/^(\d{2,4})\s+(d[e]?|[a-f])\s*(.*)$/);
+  if(m){const cod=m[1],resto=m[3].trim();if(!resto||/^x\b/.test(resto))return[cod,0];const p=vNumExt(resto);if(p!==null)return[cod,p];}
+  // Letra ou "de" (iPhone transcreve "D" como "de") + número/extenso/x
+  m=t.match(/^(de|[a-f])\s+(.+)$/);
+  if(m){const l=m[1]==='de'?'D':m[1].toUpperCase(),resto=m[2].trim();if(/^x\b/.test(resto))return[l,0];const p=vNumExt(resto);if(p!==null)return[l,p];}
+  // Letra isolada
+  m=t.match(/^(de|[a-f])$/);if(m)return[m[1]==='de'?'D':m[1].toUpperCase(),0];
   return['',0];
 }
 function vPedido(bloco,ano){
   bloco=bloco.replace(/\s+/g,' ').toLowerCase().trim();
   if(bloco.length<5)return null;
-  const res={data:T(),cliente_raw:'',valor:0,tabela:'',percentual:0,tipo:'Normal',data_entrega:null};
+  const res={data:T(),cliente_raw:'',valor:0,tabela:'',percentual:0,tipo:'Normal',data_entrega:null,_cliente_incerto:false};
   const ps=vSplit(bloco);
   if(ps[0].trim()==='programado'){res.tipo='Programado';ps.shift();}
   for(const p of ps){
     const pt=p.trim();if(!pt)continue;
     if(pt.startsWith('data ')){const d=vData(pt.slice(5),ano);if(d)res.data=d;}
-    else if(/^\d{1,2}\s+d[oe]\s+\d{1,2}/.test(pt)){const d=vData(pt,ano);if(d)res.data=d;}
-    else if(pt.startsWith('cliente ')){res.cliente_raw=pt.slice(8).trim().toUpperCase();}
+    else if(/^\d{1,2}(\s+d[oe]\s+\d{1,2}|\/\d{1,2})/.test(pt)){const d=vData(pt,ano);if(d)res.data=d;}
+    else if(pt.startsWith('cliente ')){res.cliente_raw=pt.slice(8).trim().toUpperCase();res._cliente_incerto=false;}
     else if(/^v(?:alor)?\s+/.test(pt)){res.valor=vValor(pt.replace(/^v(?:alor)?\s+/,''));}
     else if(/^tab(?:ela)?\s+/.test(pt)){const[tab,pct]=vTabela(pt);res.tabela=tab;res.percentual=pct;}
     else if(pt.startsWith('entrega ')){const d=vData(pt.slice(8),ano);if(d)res.data_entrega=d;}
+    // Fallback: primeiro campo não reconhecido vira cliente (sem palavra-chave "cliente")
+    else if(!res.cliente_raw&&pt.length>3&&!/^\d/.test(pt)){res.cliente_raw=pt.toUpperCase();res._cliente_incerto=true;}
   }
   if(!res.cliente_raw||res.valor<=0)return null;
   return res;
@@ -569,10 +596,11 @@ pages.voz=async function(){
       <label style="font-size:13px;color:var(--tx2)">Ano dos pedidos</label>
       <input type="number" id="voz-ano" value="${new Date().getFullYear()}" style="width:90px;padding:6px 8px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx)">
     </div>
-    <textarea id="voz-txt" rows="7" placeholder="Cole aqui o texto do iPhone..." style="width:100%;padding:10px;border:.5px solid var(--bo2);border-radius:var(--r);font-size:14px;background:var(--bg);color:var(--tx);resize:vertical;font-family:inherit;line-height:1.5"></textarea>
-    <div class="row" style="margin-top:12px;gap:8px">
+    <textarea id="voz-txt" rows="7" placeholder="Cole aqui o texto do iPhone..." oninput="vContarMarcadores()" style="width:100%;padding:10px;border:.5px solid var(--bo2);border-radius:var(--r);font-size:14px;background:var(--bg);color:var(--tx);resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+    <div id="voz-marcadores" style="font-size:12px;color:var(--tx2);margin-top:5px;min-height:18px"></div>
+    <div class="row" style="margin-top:10px;gap:8px">
       <button class="btn bp" onclick="processarVoz()">🔍 Processar</button>
-      <button class="btn bs" onclick="document.getElementById('voz-txt').value='';document.getElementById('voz-preview').innerHTML='';VOZ_RESULTADO=[]">❌ Cancelar</button>
+      <button class="btn bs" onclick="document.getElementById('voz-txt').value='';document.getElementById('voz-marcadores').textContent='';document.getElementById('voz-preview').innerHTML='';VOZ_RESULTADO=[]">❌ Cancelar</button>
     </div>
   </div>
   <div id="voz-preview"></div>`;
@@ -598,38 +626,44 @@ function vDropdown(idx,r){
 }
 function vCelCliente(r,i){
   const raw=`<div style="font-size:11px;color:var(--tx2)">${r.cliente_raw}</div>`;
+  const incBadge=r._cliente_incerto&&!r._resolved?'<span style="font-size:10px;background:var(--bgw);color:var(--txw);border-radius:3px;padding:1px 4px;margin-left:4px">⚠️ incerto</span>':'';
   if(r._resolved){
     if(r.cliente_id==='__novo__')return raw+`<strong style="color:var(--txi)">+ ${r.cliente_raw}</strong><div style="font-size:11px;color:var(--txi)">Será cadastrado como novo</div>`;
     return raw+`<strong>${r.cliente_nome}</strong>`;
   }
   if(r.match_score<0.60||r._troca)return raw+vDropdown(i,r);
-  return raw+`<div style="display:flex;align-items:center;gap:6px"><strong>${r.cliente_nome}</strong><button class="btn bs" style="font-size:11px;padding:2px 6px" onclick="vModoTroca(${i})">Trocar</button></div>`;
+  return raw+`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><strong>${r.cliente_nome}</strong>${incBadge}<button class="btn bs" style="font-size:11px;padding:2px 6px" onclick="vModoTroca(${i})">Trocar</button></div>`;
 }
 function vBgRow(r){return r._resolved||r.match_score>=0.85?'var(--bgs)':r.match_score>=0.60?'var(--bgw)':'var(--bgd)';}
 function vBcRow(r){return r._resolved||r.match_score>=0.85?'bgs':r.match_score>=0.60?'bgw':'bgd';}
 function vPctRow(r){return r._resolved?(r.cliente_id==='__novo__'?'Novo':'100'):Math.round(r.match_score*100);}
 function vRenderPreview(){
+  const _pr=VOZ_RESULTADO.filter(r=>r._resolved||r.match_score>=0.85).length;
+  const _rv=VOZ_RESULTADO.filter(r=>!r._resolved&&r.match_score>=0.60&&r.match_score<0.85).length;
+  const _sc=VOZ_RESULTADO.filter(r=>!r._resolved&&r.match_score<0.60).length;
+  const tabSel=tab=>`<input type="text" value="${tab||''}" onchange="vEditTab(this,'tabela',this.value.toUpperCase())" style="width:46px;padding:2px 4px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;text-align:center" title="Tabela">`;
+  const pctInp=pct=>`<input type="number" value="${pct||0}" step="0.5" min="0" max="20" onchange="vEditTab(this,'percentual',this.value)" style="width:46px;padding:2px 4px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;text-align:center" title="%">`;
   document.getElementById('voz-preview').innerHTML=`
   <div class="card" style="margin-top:12px">
-    <div class="rowb" style="margin-bottom:10px">
-      <span style="font-weight:600">${VOZ_RESULTADO.length} pedido(s) identificado(s)</span>
-      <div class="row" style="gap:6px;font-size:11px">
-        <span class="badge bgs">verde &gt;85%</span>
-        <span class="badge bgw">amarelo 60–85% — botão Trocar</span>
-        <span class="badge bgd">vermelho &lt;60% — selecione o cliente</span>
+    <div class="rowb" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <span style="font-weight:600">${VOZ_RESULTADO.length} detectado(s)</span>
+      <div class="row" style="gap:6px;font-size:11px;flex-wrap:wrap">
+        <span class="badge bgs">${_pr} prontos ✅</span>
+        <span class="badge bgw">${_rv} revisar ⚠️</span>
+        <span class="badge bgd">${_sc} sem cliente ❌</span>
       </div>
     </div>
     <div class="ov"><table><thead><tr>
       <th>#</th><th>Data</th><th>Cliente encontrado</th><th>Match%</th><th>Valor</th><th>Tab</th><th>%</th><th>Tipo</th><th>Entrega</th>
     </tr></thead>
-    <tbody>${VOZ_RESULTADO.map((r,i)=>`<tr style="background:${vBgRow(r)}">
+    <tbody>${VOZ_RESULTADO.map((r,i)=>`<tr data-voz="${i}" style="background:${vBgRow(r)}">
       <td>${r.idx}</td>
       <td>${D(r.data)}</td>
       <td>${vCelCliente(r,i)}</td>
       <td><span class="badge ${vBcRow(r)}">${vPctRow(r)}%</span></td>
       <td>${R(r.valor)}</td>
-      <td>${r.tabela||'—'}</td>
-      <td>${r.percentual||0}%</td>
+      <td>${tabSel(r.tabela)}</td>
+      <td>${pctInp(r.percentual)}</td>
       <td>${r.tipo==='Programado'?'<span class="badge bgi">📅 Prog.</span>':'Normal'}</td>
       <td>${r.data_entrega?D(r.data_entrega):'—'}</td>
     </tr>`).join('')}
@@ -651,6 +685,18 @@ function vSelecionarCliente(idx,val){
   vRenderPreview();
 }
 function vModoTroca(idx){VOZ_RESULTADO[idx]._troca=true;vRenderPreview();}
+function vContarMarcadores(){
+  const txt=document.getElementById('voz-txt')?.value||'';
+  const n=(txt.toLowerCase().match(/novo\s+pedido/g)||[]).length;
+  const el=document.getElementById('voz-marcadores');
+  if(el)el.textContent=n>0?`Detectamos ${n} marcador(es) "novo pedido" no texto`:'';
+}
+function vEditTab(el,campo,val){
+  const tr=el.closest('tr[data-voz]');if(!tr)return;
+  const i=+tr.dataset.voz;
+  if(campo==='percentual')VOZ_RESULTADO[i].percentual=parseFloat(val)||0;
+  else VOZ_RESULTADO[i][campo]=val;
+}
 function processarVoz(){
   const txt=document.getElementById('voz-txt').value.trim();
   const ano=parseInt(document.getElementById('voz-ano').value)||new Date().getFullYear();
