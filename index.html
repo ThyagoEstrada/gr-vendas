@@ -540,17 +540,22 @@ function vPedido(bloco,ano){
   bloco=bloco.replace(/\s+/g,' ').toLowerCase().trim();
   if(bloco.length<5)return null;
   const res={data:T(),cliente_raw:'',valor:0,tabela:'',percentual:0,tipo:'Normal',data_entrega:null,_cliente_incerto:false};
+  // "programado" pode vir colado ao resto sem vírgula ("programado cliente X")
+  if(/^programado\b/.test(bloco)){res.tipo='Programado';bloco=bloco.replace(/^programado\s*,?\s*/,'');}
   const ps=vSplit(bloco);
   if(ps[0].trim()==='programado'){res.tipo='Programado';ps.shift();}
   for(const p of ps){
     const pt=p.trim();if(!pt)continue;
-    if(pt.startsWith('data ')){const d=vData(pt.slice(5),ano);if(d)res.data=d;}
+    if(pt.startsWith('data ')){
+      const d=vData(pt.slice(5),ano);
+      // Pedido programado: "data X" ditado pelo usuário é a data de entrega
+      if(d){if(res.tipo==='Programado')res.data_entrega=d;else res.data=d;}
+    }
     else if(/^\d{1,2}(\s+d[oe]\s+\d{1,2}|\/\d{1,2})/.test(pt)){const d=vData(pt,ano);if(d)res.data=d;}
     else if(pt.startsWith('cliente ')){res.cliente_raw=pt.slice(8).trim().toUpperCase();res._cliente_incerto=false;}
     else if(/^v(?:alor)?\s+/.test(pt)){res.valor=vValor(pt.replace(/^v(?:alor)?\s+/,''));}
     else if(/^tab(?:ela)?\s+/.test(pt)){const[tab,pct]=vTabela(pt);res.tabela=tab;res.percentual=pct;}
     else if(pt.startsWith('entrega ')){const d=vData(pt.slice(8),ano);if(d)res.data_entrega=d;}
-    // Fallback: primeiro campo não reconhecido vira cliente (sem palavra-chave "cliente")
     else if(!res.cliente_raw&&pt.length>3&&!/^\d/.test(pt)){res.cliente_raw=pt.toUpperCase();res._cliente_incerto=true;}
   }
   if(!res.cliente_raw||res.valor<=0)return null;
@@ -627,8 +632,22 @@ function vDropdown(idx,r){
 function vCelCliente(r,i){
   const raw=`<div style="font-size:11px;color:var(--tx2)">${r.cliente_raw}</div>`;
   const incBadge=r._cliente_incerto&&!r._resolved?'<span style="font-size:10px;background:var(--bgw);color:var(--txw);border-radius:3px;padding:1px 4px;margin-left:4px">⚠️ incerto</span>':'';
+  if(r._novo_form){
+    const cidOpts=CC.map(c=>`<option value="${c.id}"${r._novoCliente?.cidade_id==c.id?' selected':''}>${c.cidade}${c.estado?' - '+c.estado:''}</option>`).join('');
+    return raw+`<div style="margin-top:5px;display:flex;flex-direction:column;gap:5px">
+      <input id="voz-nome-${i}" value="${(r._novoCliente?.nome||r.cliente_raw).replace(/"/g,'&quot;')}" placeholder="Nome" style="padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;width:100%;max-width:240px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <input id="voz-cod-${i}" type="number" value="${r._novoCliente?.codigo||''}" placeholder="Código *" style="width:80px;padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px">
+        <select id="voz-cid-${i}" style="padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;flex:1;min-width:120px"><option value="">— Cidade —</option>${cidOpts}</select>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn bp" style="font-size:11px;padding:3px 8px" onclick="vConfirmarNovoCliente(${i})">✓ OK</button>
+        <button class="btn bs" style="font-size:11px;padding:3px 8px" onclick="vCancelarNovo(${i})">✕</button>
+      </div>
+    </div>`;
+  }
   if(r._resolved){
-    if(r.cliente_id==='__novo__')return raw+`<strong style="color:var(--txi)">+ ${r.cliente_raw}</strong><div style="font-size:11px;color:var(--txi)">Será cadastrado como novo</div>`;
+    if(r.cliente_id==='__novo__')return raw+`<strong style="color:var(--txi)">+ ${r._novoCliente?.nome||r.cliente_raw}</strong><div style="font-size:11px;color:var(--txi)">Código: ${r._novoCliente?.codigo||'—'} | Será cadastrado</div>`;
     return raw+`<strong>${r.cliente_nome}</strong>`;
   }
   if(r.match_score<0.60||r._troca)return raw+vDropdown(i,r);
@@ -677,11 +696,29 @@ function vSelecionarCliente(idx,val){
   if(!val)return;
   const r=VOZ_RESULTADO[idx];
   if(val==='__novo__'){
-    r.cliente_id='__novo__';r.cliente_nome=r.cliente_raw;r._resolved=true;r._troca=false;
+    // Abre mini formulário — não resolve ainda até código ser preenchido
+    r.cliente_id='__novo__';r._novoCliente={nome:r.cliente_raw,codigo:'',cidade_id:null};
+    r._novo_form=true;r._resolved=false;r._troca=false;
   }else{
     const c=CL.find(x=>x.id==val);
-    if(c){r.cliente_id=c.id;r.cliente_nome=c.nome;r._resolved=true;r._troca=false;}
+    if(c){r.cliente_id=c.id;r.cliente_nome=c.nome;r._resolved=true;r._troca=false;r._novo_form=false;}
   }
+  vRenderPreview();
+}
+function vConfirmarNovoCliente(idx){
+  const r=VOZ_RESULTADO[idx];
+  const nome=(document.getElementById(`voz-nome-${idx}`)?.value||'').trim();
+  const codigo=(document.getElementById(`voz-cod-${idx}`)?.value||'').trim();
+  const cidade_id=document.getElementById(`voz-cid-${idx}`)?.value||null;
+  if(!codigo){snk('Informe o código do cliente');return}
+  if(!nome){snk('Informe o nome do cliente');return}
+  r._novoCliente={nome,codigo:parseInt(codigo),cidade_id:cidade_id?parseInt(cidade_id):null};
+  r.cliente_nome=nome;r.cliente_id='__novo__';r._resolved=true;r._novo_form=false;
+  vRenderPreview();
+}
+function vCancelarNovo(idx){
+  const r=VOZ_RESULTADO[idx];
+  r._novo_form=false;r.cliente_id=null;r._troca=true;r._resolved=false;
   vRenderPreview();
 }
 function vModoTroca(idx){VOZ_RESULTADO[idx]._troca=true;vRenderPreview();}
@@ -718,9 +755,10 @@ async function confirmarVoz(){
     try{
       let cid=p.cliente_id;
       if(cid==='__novo__'){
-        const novo=await sb('clientes','POST',{nome:p.cliente_raw,status:'ativo'});
+        const nd=p._novoCliente||{nome:p.cliente_raw,codigo:null,cidade_id:null};
+        const novo=await sb('clientes','POST',{nome:nd.nome,codigo:nd.codigo||null,cidade_id:nd.cidade_id||null,status:'ativo'});
         cid=novo[0].id;
-        CL.push({id:cid,nome:p.cliente_raw,status:'ativo',codigo:null});
+        CL.push({id:cid,nome:nd.nome,status:'ativo',codigo:nd.codigo||null});
       }
       await sb('pedidos','POST',{data_pedido:p.data,cliente_id:cid,valor_total:p.valor,status:'Pendente',tipo:p.tipo,data_entrega:p.data_entrega||null,observacao:`Voz | Tab: ${p.tabela} ${p.percentual}%`});
       salvos++;
