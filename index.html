@@ -338,18 +338,31 @@ pages.dashboard=async function(){
   try{
     const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
     const mesStr=String(mes).padStart(2,'0');
+    const dtIni=`${ano}-${mesStr}-01`;
     const dtFim=mes<12?`${ano}-${String(mes+1).padStart(2,'0')}-01`:`${ano+1}-01-01`;
-    const[pdAprov,pdPend,pd,sa,dv,prog]=await Promise.all([
+    const[pdAprovMeta,pdAprovFb,pdPendMeta,pdPendFb,pd,sa,dv,prog]=await Promise.all([
+      // Aprovados com mes_meta preenchido (fluxo normal)
       sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=in.(Aprovado,Importado,Faturado)&select=id,valor_total`),
-      sb('pedidos','GET',null,`?data_pedido=gte.${ano}-${mesStr}-01&data_pedido=lt.${dtFim}&status=eq.Pendente&select=id,valor_total`),
+      // Aprovados sem mes_meta — fallback por data_aprovacao (pedidos migrados antes da coluna existir)
+      sb('pedidos','GET',null,`?data_aprovacao=gte.${dtIni}&data_aprovacao=lt.${dtFim}&mes_meta=is.null&status=in.(Aprovado,Importado,Faturado)&select=id,valor_total`),
+      // Pendentes com mes_meta preenchido
+      sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=eq.Pendente&select=id,valor_total`),
+      // Pendentes sem mes_meta — fallback por data_pedido
+      sb('pedidos','GET',null,`?data_pedido=gte.${dtIni}&data_pedido=lt.${dtFim}&mes_meta=is.null&status=eq.Pendente&select=id,valor_total`),
       sb('pedidos','GET',null,'?select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=8'),
       sb('saidas','GET',null,'?select=comissao,valor&limit=1000'),
       sb('divergencias','GET',null,'?resolvida=eq.false&select=id'),
       sb('pedidos','GET',null,'?tipo=eq.Programado&status=not.in.(Cancelado,Faturado)&order=data_entrega&limit=5&select=id,numero_pedido,data_entrega,clientes(nome)').catch(()=>[])
     ]);
+    // Mesclar e deduplicar por id
+    const seenA=new Set(pdAprovMeta.map(p=>p.id));
+    const pdAprov=[...pdAprovMeta,...pdAprovFb.filter(p=>!seenA.has(p.id))];
+    const seenP=new Set(pdPendMeta.map(p=>p.id));
+    const pdPend=[...pdPendMeta,...pdPendFb.filter(p=>!seenP.has(p.id))];
     const tAprov=pdAprov.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
     const tPend=pdPend.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
     const tPot=tAprov+tPend;
+    console.log(`[Dashboard] ${mes}/${ano} | Aprovados: meta=${pdAprovMeta.length} fb=${pdAprovFb.length} total=${pdAprov.length} R$${tAprov.toFixed(2)} | Pendentes: meta=${pdPendMeta.length} fb=${pdPendFb.length} total=${pdPend.length} R$${tPend.toFixed(2)} | Potencial R$${tPot.toFixed(2)}`);
     const tS=sa.reduce((s,p)=>s+parseFloat(p.valor||0),0);
     const tC=sa.reduce((s,p)=>s+parseFloat(p.comissao||0),0);
     const meta=370000;
