@@ -307,7 +307,7 @@ const N=v=>parseFloat(v||0).toFixed(2).replace('.',',');
 const D=s=>{if(!s)return'';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`};
 const T=()=>new Date().toISOString().split('T')[0];
 const F1=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`};
-const SBG=s=>s==='Faturado'?'bgs':s==='Cancelado'?'bgd':s==='Importado'?'bgi':'bgw';
+const SBG=s=>s==='Aprovado'?'bgs':s==='Pendente'?'bgw':s==='Faturado'?'bgs':s==='Importado'?'bgi':s==='Cancelado'?'bgd':'bgw';
 function mdl(html){const o=document.createElement('div');o.className='ov2';o.innerHTML=`<div class="mdl">${html}</div>`;o.addEventListener('click',e=>{if(e.target===o)o.remove()});document.body.appendChild(o)}
 function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`)?.classList.toggle('on',`${p}${s}`===id);document.getElementById(`tp-${p}${s}`)?.classList.toggle('hide',`${p}${s}`!==id)})}
 
@@ -333,18 +333,25 @@ const pages={};
 pages.dashboard=async function(){
   document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
   try{
-    const[pd,sa,dv,prog]=await Promise.all([
-      sb('pedidos','GET',null,'?select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=200'),
+    const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+    const mesStr=String(mes).padStart(2,'0');
+    const dtFim=mes<12?`${ano}-${String(mes+1).padStart(2,'0')}-01`:`${ano+1}-01-01`;
+    const[pdAprov,pdPend,pd,sa,dv,prog]=await Promise.all([
+      sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=in.(Aprovado,Importado,Faturado)&select=id,valor_total`),
+      sb('pedidos','GET',null,`?data_pedido=gte.${ano}-${mesStr}-01&data_pedido=lt.${dtFim}&status=eq.Pendente&select=id,valor_total`),
+      sb('pedidos','GET',null,'?select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=8'),
       sb('saidas','GET',null,'?select=comissao,valor&limit=1000'),
       sb('divergencias','GET',null,'?resolvida=eq.false&select=id'),
       sb('pedidos','GET',null,'?tipo=eq.Programado&status=not.in.(Cancelado,Faturado)&order=data_entrega&limit=5&select=id,numero_pedido,data_entrega,clientes(nome)').catch(()=>[])
     ]);
-    const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
-    const pm=pd.filter(p=>p.data_pedido?.startsWith(`${ano}-${String(mes).padStart(2,'0')}`));
-    const tE=pm.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
+    const tAprov=pdAprov.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
+    const tPend=pdPend.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
+    const tPot=tAprov+tPend;
     const tS=sa.reduce((s,p)=>s+parseFloat(p.valor||0),0);
     const tC=sa.reduce((s,p)=>s+parseFloat(p.comissao||0),0);
-    const meta=370000,pct=Math.min(100,Math.round(tE/meta*100));
+    const meta=370000;
+    const pctAprov=Math.min(100,Math.round(tAprov/meta*100));
+    const pctPot=Math.min(100,Math.round(tPot/meta*100));
     const progRows=prog.map(r=>{
       const diff=r.data_entrega?Math.round((new Date(r.data_entrega+'T00:00:00')-new Date())/86400000):null;
       const cls=diff===null?'bg2':diff<0?'bgd':diff<=3?'bgw':'bgs';
@@ -353,15 +360,27 @@ pages.dashboard=async function(){
     }).join('');
     document.getElementById('ct').innerHTML=`
     <div class="g4">
-      <div class="mt"><div class="ml">Pedidos este mês</div><div class="mv">${pm.length}</div></div>
-      <div class="mt"><div class="ml">Total entradas</div><div class="mv">${R(tE)}</div><div class="ms">Meta: ${R(meta)}</div></div>
+      <div class="mt"><div class="ml">Pedidos este mês</div><div class="mv">${pdAprov.length+pdPend.length}</div></div>
+      <div class="mt"><div class="ml">Total aprovado</div><div class="mv">${R(tAprov)}</div><div class="ms">Meta: ${R(meta)}</div></div>
       <div class="mt"><div class="ml">Total saídas</div><div class="mv">${R(tS)}</div></div>
       <div class="mt"><div class="ml">Comissão apurada</div><div class="mv" style="color:#1D9E75">${R(tC)}</div></div>
     </div>
     <div class="card">
-      <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">META DO MÊS</span><span class="badge ${pct>=100?'bgs':'bgw'}">${pct}% atingido</span></div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">${R(tE)} / ${R(meta)}</div>
-      <div class="pb"><div class="pf" style="width:${pct}%"></div></div>
+      <div class="rowb" style="margin-bottom:6px">
+        <span style="font-size:11px;font-weight:500;color:var(--tx2)">META DO MÊS</span>
+        <div style="display:flex;gap:5px">
+          <span class="badge bgi">${pctPot}% potencial</span>
+          <span class="badge bgs">${pctAprov}% aprovado</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">
+        <span style="color:#1D9E75;font-weight:500">${R(tAprov)}</span> aprovado${tPend>0?` + <span style="color:#F59E0B;font-weight:500">${R(tPend)}</span> pendente`:''}
+        = ${R(tPot)} / Meta ${R(meta)}
+      </div>
+      <div style="position:relative;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${pctPot}%;background:#4A90D9;border-radius:5px;transition:width .6s"></div>
+        <div style="position:absolute;left:0;top:0;height:100%;width:${pctAprov}%;background:#1D9E75;border-radius:5px;transition:width .6s"></div>
+      </div>
     </div>
     ${dv.length?`<div class="al alw">${dv.length} divergência(s) — <a href="#" onclick="go('divergencias');return false" style="color:inherit;font-weight:500">verificar</a></div>`:''}
     ${prog.length?`<div class="card">
@@ -484,15 +503,16 @@ pages.pedidos=async function(){
   document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo pedido</button>`;
   document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
   try{
-    _PED_ROWS=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
+    _PED_ROWS=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,data_aprovacao,mes_meta,ano_meta,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
     document.getElementById('ct').innerHTML=`
     <div class="sbar">
       <input type="text" placeholder="Cliente ou Nº..." id="bp2" autocomplete="off" oninput="renderPedidos(this.value,document.getElementById('sp').value,document.getElementById('d1').value,document.getElementById('d2').value)" style="flex:1;min-width:100px">
       <input type="date" id="d1" onchange="renderPedidos(document.getElementById('bp2').value,document.getElementById('sp').value,this.value,document.getElementById('d2').value)" style="width:130px">
       <input type="date" id="d2" onchange="renderPedidos(document.getElementById('bp2').value,document.getElementById('sp').value,document.getElementById('d1').value,this.value)" style="width:130px">
       <select id="sp" onchange="renderPedidos(document.getElementById('bp2').value,this.value,document.getElementById('d1').value,document.getElementById('d2').value)" style="width:auto">
-        <option value="">Todos</option><option>Pendente</option><option>Importado</option><option>Faturado</option><option>Cancelado</option>
+        <option value="">Todos</option><option>Aprovado</option><option>Pendente</option><option>Importado</option><option>Faturado</option><option>Cancelado</option>
       </select>
+      <button class="btn bs" style="white-space:nowrap" onclick="document.getElementById('sp').value='Pendente';renderPedidos('','Pendente','','')">⏳ Pendentes</button>
     </div>
     <div class="card"><div class="ov"><table>
       <thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Tipo</th><th></th></tr></thead>
@@ -511,9 +531,10 @@ function renderPedidos(f='',sf='',di='',df=''){
   const tbl=document.getElementById('ped-table');if(!tbl)return;
   tbl.innerHTML=rows.map(r=>`<tr>
     <td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${r.clientes?.nome||'—'}</td>
-    <td>${R(r.valor_total)}</td><td><span class="badge ${SBG(r.status)}">${r.status}</span></td>
+    <td>${R(r.valor_total)}</td>
+    <td><span class="badge ${SBG(r.status)}">${r.status}</span>${r.data_aprovacao?`<div style="font-size:10px;color:var(--tx2);margin-top:2px">${D(r.data_aprovacao)}</div>`:''}</td>
     <td>${r.tipo==='Programado'?`<span class="badge bgi">📅 ${r.data_entrega?D(r.data_entrega):''}</span>`:'—'}</td>
-    <td><button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
+    <td style="white-space:nowrap">${r.status==='Pendente'?`<button class="btn bs" style="color:#1D9E75;margin-right:3px" onclick="aprovarPedido(${r.id})" title="Aprovar">✅</button>`:''}<button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
   </tr>`).join('');
 }
 
@@ -561,12 +582,14 @@ async function fmP(id=null){
       </div>
     </div>
     <div class="fg"><label>Valor (R$)</label><input type="number" id="pv" value="${p.valor_total||''}" step="0.01"></div>
-    <div class="fg"><label>Status</label><select id="ps">
-      <option ${(!p.status||p.status==='Pendente')?'selected':''}>Pendente</option>
-      <option ${p.status==='Importado'?'selected':''}>Importado</option>
-      <option ${p.status==='Faturado'?'selected':''}>Faturado</option>
-      <option ${p.status==='Cancelado'?'selected':''}>Cancelado</option>
+    <div class="fg"><label>Status</label><select id="ps" onchange="document.getElementById('fg-aprov').style.display=this.value!=='Pendente'?'flex':'none'">
+      <option value="Aprovado" ${(!p.status||p.status==='Aprovado')?'selected':''}>Aprovado</option>
+      <option value="Pendente" ${p.status==='Pendente'?'selected':''}>⏳ Pendente</option>
+      ${p.status&&!['Aprovado','Pendente'].includes(p.status)?`<option value="${p.status}" selected>${p.status}</option>`:''}
     </select></div>
+    <div class="fg" id="fg-aprov" style="display:${(!p.status||p.status!=='Pendente')?'flex':'none'}">
+      <label>Data aprovação</label><input type="date" id="p-aprov" value="${p.data_aprovacao||p.data_pedido||T()}">
+    </div>
     <div class="fg"><label>Tipo</label><select id="ptp" onchange="document.getElementById('fg-entrega').style.display=this.value==='Programado'?'flex':'none'">
       <option ${(!p.tipo||p.tipo==='Normal')?'selected':''}>Normal</option>
       <option ${p.tipo==='Programado'?'selected':''}>Programado</option>
@@ -587,10 +610,43 @@ async function svP(id){
   const tipo=document.getElementById('ptp')?.value||'Normal';
   const entrega=tipo==='Programado'?(document.getElementById('pde')?.value||null):null;
   if(tipo==='Programado'&&!entrega){snk('Informe a data de entrega');return}
-  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status:document.getElementById('ps').value,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,updated_at:new Date().toISOString()};
+  const status=document.getElementById('ps').value;
+  const aprovDate=status!=='Pendente'?(document.getElementById('p-aprov')?.value||document.getElementById('pd').value):null;
+  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,updated_at:new Date().toISOString()};
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
 }
 async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
+function aprovarPedido(id){
+  mdl(`<div class="rowb" style="margin-bottom:14px">
+    <span style="font-weight:500">Aprovar pedido</span>
+    <button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button>
+  </div>
+  <div class="fg" style="margin-bottom:16px">
+    <label>Data de aprovação</label>
+    <input type="date" id="aprov-dt" value="${T()}" style="font-size:16px;padding:8px 10px">
+  </div>
+  <div style="display:flex;justify-content:flex-end;gap:8px">
+    <button class="btn bs" onclick="this.closest('.ov2').remove()">Cancelar</button>
+    <button class="btn bp" onclick="confirmarAprovacao(${id})">✅ Confirmar aprovação</button>
+  </div>`);
+}
+async function confirmarAprovacao(id){
+  const dt=document.getElementById('aprov-dt')?.value||T();
+  const mes=parseInt(dt.split('-')[1]),ano=parseInt(dt.split('-')[0]);
+  try{
+    await sb('pedidos','PATCH',{status:'Aprovado',data_aprovacao:dt,mes_meta:mes,ano_meta:ano,updated_at:new Date().toISOString()},`?id=eq.${id}`);
+    const r=_PED_ROWS?.find(p=>p.id===id);
+    if(r){r.status='Aprovado';r.data_aprovacao=dt;r.mes_meta=mes;r.ano_meta=ano;}
+    document.querySelector('.ov2')?.remove();
+    snk('Pedido aprovado!');
+    renderPedidos(
+      document.getElementById('bp2')?.value||'',
+      document.getElementById('sp')?.value||'',
+      document.getElementById('d1')?.value||'',
+      document.getElementById('d2')?.value||''
+    );
+  }catch(e){snk('Erro: '+e.message)}
+}
 
 // ── IMPORTAÇÃO POR VOZ ────────────────────────────────────────────────────────
 const MESES_V={janeiro:1,fevereiro:2,'março':3,marco:3,abril:4,maio:5,junho:6,julho:7,agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12,jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
@@ -1622,10 +1678,10 @@ async function dlU(id){
   document.querySelector('.ov2')?.remove();snk('Excluído');pages.usuarios();
 }
 // ── LANÇAMENTO RÁPIDO ────────────────────────────────────────────────────────
-let RQ_TAB='',RQ_PCT=null,RQ_CLI_ID=null,RQ_CLI_NOME='',RQ_HOJE=0;
+let RQ_TAB='',RQ_PCT=null,RQ_CLI_ID=null,RQ_CLI_NOME='',RQ_HOJE=0,RQ_PENDENTE=false;
 pages.rapido=async function(){
   try{const p=await sb('pedidos','GET',null,`?data_pedido=eq.${T()}&select=id`);RQ_HOJE=p.length;}catch(e){RQ_HOJE=0;}
-  RQ_TAB='';RQ_PCT=null;RQ_CLI_ID=null;RQ_CLI_NOME='';
+  RQ_TAB='';RQ_PCT=null;RQ_CLI_ID=null;RQ_CLI_NOME='';RQ_PENDENTE=false;
   document.getElementById('ta').innerHTML='';
   document.getElementById('ct').innerHTML=`
   <div style="font-size:12px;color:var(--tx2);margin-bottom:10px;padding:8px 12px;background:var(--bg);border-radius:var(--r);border:.5px solid var(--bo)">
@@ -1684,6 +1740,7 @@ pages.rapido=async function(){
     <input type="number" id="rq-val" inputmode="decimal" placeholder="0,00" step="0.01" min="0"
       style="font-size:24px;font-weight:500;padding:12px 14px;border:.5px solid var(--bo2);border-radius:var(--r);width:100%;background:var(--bg);color:var(--tx);font-family:inherit;text-align:right">
   </div>
+  <button id="rq-pend-btn" class="btn" style="width:100%;min-height:44px;font-size:15px;margin-bottom:10px" onclick="rqTogglePendente()">✅ Aprovado</button>
   <div class="rq-card">
     <label class="rq-label">Tabela</label>
     <div id="rq-tabs-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
@@ -1721,6 +1778,13 @@ function rqToggleProgram(){
   const w=document.getElementById('rq-entrega-wrap');
   if(w)w.style.display=document.getElementById('rq-prog')?.checked?'block':'none';
 }
+function rqSetPendente(v){
+  RQ_PENDENTE=v;
+  const b=document.getElementById('rq-pend-btn');if(!b)return;
+  if(v){b.textContent='⏳ Pendente';b.style.background='#F59E0B';b.style.color='#fff';b.style.borderColor='#F59E0B';}
+  else{b.textContent='✅ Aprovado';b.style.background='';b.style.color='';b.style.borderColor='';}
+}
+function rqTogglePendente(){rqSetPendente(!RQ_PENDENTE);}
 function rqFiltrarCliente(q){
   const drop=document.getElementById('rq-cli-drop'),btnNovo=document.getElementById('rq-cli-novo');
   if(!drop)return;
@@ -1782,8 +1846,13 @@ async function rqSalvar(proximo){
   const btns=document.querySelectorAll('[onclick^="rqSalvar"]');
   btns.forEach(b=>b.disabled=true);
   try{
+    const sts=RQ_PENDENTE?'Pendente':'Aprovado';
+    const aprovDate=RQ_PENDENTE?null:data;
     await sb('pedidos','POST',{data_pedido:data,cliente_id:parseInt(cid),valor_total:val,
-      status:'Pendente',tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
+      status:sts,tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
+      data_aprovacao:aprovDate||null,
+      mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,
+      ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,
       observacao:`Rápido|Tab:${RQ_TAB}${pct}%`});
     RQ_HOJE++;
     const cnt=document.getElementById('rq-cnt');if(cnt)cnt.textContent=RQ_HOJE;
@@ -1791,7 +1860,7 @@ async function rqSalvar(proximo){
     snk(`✅ ${label} — ${R(val)}`);
     if(proximo){
       RQ_CLI_ID=null;RQ_CLI_NOME='';RQ_TAB='';RQ_PCT=null;
-      ['rq-cli-txt','rq-val'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+      ['rq-cli-txt','rq-val'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); rqSetPendente(false);
       const h=document.getElementById('rq-cli');if(h)h.value='';
       const p=document.getElementById('rq-prog');if(p)p.checked=false;
       const ew=document.getElementById('rq-entrega-wrap');if(ew)ew.style.display='none';
