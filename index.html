@@ -315,7 +315,7 @@ function mdl(html){const o=document.createElement('div');o.className='ov2';o.inn
 function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`)?.classList.toggle('on',`${p}${s}`===id);document.getElementById(`tp-${p}${s}`)?.classList.toggle('hide',`${p}${s}`!==id)})}
 
 let CC=[],TC=[],CL=[],SC=[];
-let _CLI_ROWS=null,_CLI_U={},_PED_ROWS=null;
+let _CLI_ROWS=null,_CLI_U={},_PED_ROWS=null,_DASH_MES=0,_DASH_ANO=0;
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
 const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência'};
 
@@ -333,28 +333,46 @@ async function go(p){
 const pages={};
 
 // ═══ DASHBOARD ═══════════════════════════════════════════════════════════════
-pages.dashboard=async function(){
-  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+pages.dashboard=function(){
+  const now=new Date();
+  if(!_DASH_MES){_DASH_MES=now.getMonth()+1;_DASH_ANO=now.getFullYear();}
+  document.getElementById('ta').innerHTML='';
+  document.getElementById('ct').innerHTML=`
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <button class="btn bs" style="font-size:18px;padding:2px 10px;line-height:1" onclick="dashNav(-1)">‹</button>
+    <span id="dash-lbl" style="font-size:15px;font-weight:600;min-width:130px;text-align:center">${MESES[_DASH_MES-1]} ${_DASH_ANO}</span>
+    <button class="btn bs" style="font-size:18px;padding:2px 10px;line-height:1" onclick="dashNav(1)">›</button>
+  </div>
+  <div id="dash-content"><div class="ld">Carregando...</div></div>`;
+  carregarDashboard();
+};
+function dashNav(d){
+  _DASH_MES+=d;
+  if(_DASH_MES>12){_DASH_MES=1;_DASH_ANO++;}
+  if(_DASH_MES<1){_DASH_MES=12;_DASH_ANO--;}
+  const lbl=document.getElementById('dash-lbl');
+  if(lbl)lbl.textContent=`${MESES[_DASH_MES-1]} ${_DASH_ANO}`;
+  carregarDashboard();
+}
+async function carregarDashboard(){
+  const el=document.getElementById('dash-content');
+  if(!el)return;
+  el.innerHTML='<div class="ld">Carregando...</div>';
+  const mes=_DASH_MES,ano=_DASH_ANO;
   try{
-    const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
     const mesStr=String(mes).padStart(2,'0');
     const dtIni=`${ano}-${mesStr}-01`;
     const dtFim=mes<12?`${ano}-${String(mes+1).padStart(2,'0')}-01`:`${ano+1}-01-01`;
     const[pdAprovMeta,pdAprovFb,pdPendMeta,pdPendFb,pd,sa,dv,prog]=await Promise.all([
-      // Aprovados com mes_meta preenchido (fluxo normal)
       sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=in.(Aprovado,Importado,Faturado)&select=id,valor_total`),
-      // Aprovados sem mes_meta — fallback por data_aprovacao (pedidos migrados antes da coluna existir)
       sb('pedidos','GET',null,`?data_aprovacao=gte.${dtIni}&data_aprovacao=lt.${dtFim}&mes_meta=is.null&status=in.(Aprovado,Importado,Faturado)&select=id,valor_total`),
-      // Pendentes com mes_meta preenchido
       sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=eq.Pendente&select=id,valor_total`),
-      // Pendentes sem mes_meta — fallback por data_pedido
       sb('pedidos','GET',null,`?data_pedido=gte.${dtIni}&data_pedido=lt.${dtFim}&mes_meta=is.null&status=eq.Pendente&select=id,valor_total`),
-      sb('pedidos','GET',null,'?select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=8'),
+      sb('pedidos','GET',null,`?data_pedido=gte.${dtIni}&data_pedido=lt.${dtFim}&select=numero_pedido,valor_total,status,data_pedido&order=data_pedido.desc&limit=8`),
       sb('saidas','GET',null,'?select=comissao,valor&limit=1000'),
       sb('divergencias','GET',null,'?resolvida=eq.false&select=id'),
       sb('pedidos','GET',null,'?tipo=eq.Programado&status=not.in.(Cancelado,Faturado)&order=data_entrega&limit=5&select=id,numero_pedido,data_entrega,clientes(nome)').catch(()=>[])
     ]);
-    // Mesclar e deduplicar por id
     const seenA=new Set(pdAprovMeta.map(p=>p.id));
     const pdAprov=[...pdAprovMeta,...pdAprovFb.filter(p=>!seenA.has(p.id))];
     const seenP=new Set(pdPendMeta.map(p=>p.id));
@@ -362,7 +380,7 @@ pages.dashboard=async function(){
     const tAprov=pdAprov.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
     const tPend=pdPend.reduce((s,p)=>s+parseFloat(p.valor_total||0),0);
     const tPot=tAprov+tPend;
-    console.log(`[Dashboard] ${mes}/${ano} | Aprovados: meta=${pdAprovMeta.length} fb=${pdAprovFb.length} total=${pdAprov.length} R$${tAprov.toFixed(2)} | Pendentes: meta=${pdPendMeta.length} fb=${pdPendFb.length} total=${pdPend.length} R$${tPend.toFixed(2)} | Potencial R$${tPot.toFixed(2)}`);
+    console.log(`[Dashboard] ${mes}/${ano} | Aprovados: meta=${pdAprovMeta.length} fb=${pdAprovFb.length} total=${pdAprov.length} R$${tAprov.toFixed(2)} | Pendentes: meta=${pdPendMeta.length} fb=${pdPendFb.length} total=${pdPend.length} R$${tPend.toFixed(2)}`);
     const tS=sa.reduce((s,p)=>s+parseFloat(p.valor||0),0);
     const tC=sa.reduce((s,p)=>s+parseFloat(p.comissao||0),0);
     const meta=370000;
@@ -374,16 +392,16 @@ pages.dashboard=async function(){
       const label=diff===null?'—':diff<0?`${Math.abs(diff)}d atraso`:diff===0?'Hoje':`${diff}d`;
       return `<tr><td>${r.clientes?.nome||'—'}</td><td>${r.numero_pedido||'—'}</td><td>${D(r.data_entrega)||'—'}</td><td><span class="badge ${cls}">${label}</span></td></tr>`;
     }).join('');
-    document.getElementById('ct').innerHTML=`
+    el.innerHTML=`
     <div class="g4">
-      <div class="mt"><div class="ml">Pedidos este mês</div><div class="mv">${pdAprov.length+pdPend.length}</div></div>
+      <div class="mt"><div class="ml">Pedidos no mês</div><div class="mv">${pdAprov.length+pdPend.length}</div></div>
       <div class="mt"><div class="ml">Total aprovado</div><div class="mv">${R(tAprov)}</div><div class="ms">Meta: ${R(meta)}</div></div>
       <div class="mt"><div class="ml">Total saídas</div><div class="mv">${R(tS)}</div></div>
       <div class="mt"><div class="ml">Comissão apurada</div><div class="mv" style="color:#1D9E75">${R(tC)}</div></div>
     </div>
     <div class="card">
       <div class="rowb" style="margin-bottom:6px">
-        <span style="font-size:11px;font-weight:500;color:var(--tx2)">META DO MÊS</span>
+        <span style="font-size:11px;font-weight:500;color:var(--tx2)">META — ${MESES[mes-1].toUpperCase()} ${ano}</span>
         <div style="display:flex;gap:5px">
           <span class="badge bgi">${pctPot}% potencial</span>
           <span class="badge bgs">${pctAprov}% aprovado</span>
@@ -405,9 +423,9 @@ pages.dashboard=async function(){
       <tbody>${progRows}</tbody></table></div>
     </div>`:''}
     <div class="card">
-      <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">ÚLTIMOS PEDIDOS</span><button class="btn bs" onclick="go('pedidos')">Ver todos</button></div>
+      <div class="rowb"><span style="font-size:11px;font-weight:500;color:var(--tx2)">PEDIDOS — ${MESES[mes-1].toUpperCase()} ${ano}</span><button class="btn bs" onclick="go('pedidos')">Ver todos</button></div>
       <div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Valor</th><th>Status</th></tr></thead>
-      <tbody>${pd.slice(0,8).map(p=>`<tr><td>${p.numero_pedido||'—'}</td><td>${D(p.data_pedido)}</td><td>${R(p.valor_total)}</td><td><span class="badge ${SBG(p.status)}">${p.status}</span></td></tr>`).join('')}</tbody></table></div>
+      <tbody>${pd.map(p=>`<tr><td>${p.numero_pedido||'—'}</td><td>${D(p.data_pedido)}</td><td>${R(p.valor_total)}</td><td><span class="badge ${SBG(p.status)}">${p.status}</span></td></tr>`).join('')}</tbody></table></div>
     </div>
     <div class="g2">
       <div class="card" style="background:var(--bg2)">
@@ -422,7 +440,7 @@ pages.dashboard=async function(){
         <button class="btn bp" onclick="downloadTranscrever()">Baixar transcrever_pedidos.py</button>
       </div>
     </div>`;
-  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro ao carregar dashboard: ${e.message}</div>`}
+  }catch(e){el.innerHTML=`<div class="al alr">Erro ao carregar dashboard: ${e.message}</div>`}
 };
 
 // ═══ CLIENTES ════════════════════════════════════════════════════════════════
