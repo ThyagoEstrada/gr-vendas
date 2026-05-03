@@ -182,6 +182,7 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
   <div class="ns"><div class="nl">Relatórios</div>
     <div class="ni" data-p="relatorios"><span>📊</span><span>Relatórios</span></div>
     <div class="ni" data-p="rel-anual"><span>🏆</span><span>Anual por Cliente</span></div>
+    <div class="ni" data-p="conferencia"><span>🔍</span><span>Conferência</span></div>
     <div class="ni" data-p="divergencias"><span>⚠️</span><span>Divergências</span></div></div>
 </div>
 <div class="mn">
@@ -308,13 +309,15 @@ const D=s=>{if(!s)return'';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`};
 const T=()=>new Date().toISOString().split('T')[0];
 const F1=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`};
 const SBG=s=>s==='Aprovado'?'bgs':s==='Pendente'?'bgw':s==='Faturado'?'bgs':s==='Importado'?'bgi':s==='Cancelado'?'bgd':'bgw';
+const SCONF=s=>s==='OK'||s==='Conferido'?'bgs':s==='Divergente'?'bgw':s==='NaoEncontrado'?'bgd':'bg2';
+const LCONF=s=>s==='OK'||s==='Conferido'?'✅':s==='Divergente'?'⚠️':s==='NaoEncontrado'?'❌':'⏳';
 function mdl(html){const o=document.createElement('div');o.className='ov2';o.innerHTML=`<div class="mdl">${html}</div>`;o.addEventListener('click',e=>{if(e.target===o)o.remove()});document.body.appendChild(o)}
 function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`)?.classList.toggle('on',`${p}${s}`===id);document.getElementById(`tp-${p}${s}`)?.classList.toggle('hide',`${p}${s}`!==id)})}
 
 let CC=[],TC=[],CL=[],SC=[];
 let _CLI_ROWS=null,_CLI_U={},_PED_ROWS=null;
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência'};
 
 async function go(p){
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===p));
@@ -374,8 +377,8 @@ pages.dashboard=async function(){
         </div>
       </div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">
-        <span style="color:#1D9E75;font-weight:500">${R(tAprov)}</span> aprovado${tPend>0?` + <span style="color:#F59E0B;font-weight:500">${R(tPend)}</span> pendente`:''}
-        = ${R(tPot)} / Meta ${R(meta)}
+        ✅ <span style="color:#1D9E75;font-weight:500">${R(tAprov)}</span> aprovado (${pctAprov}%)${tPend>0?` + ⏳ <span style="color:#F59E0B;font-weight:500">${R(tPend)}</span> pendente (${pctPot-pctAprov}%)`:''}
+        = <strong>${R(tPot)}</strong> | Meta ${R(meta)}
       </div>
       <div style="position:relative;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden">
         <div style="position:absolute;left:0;top:0;height:100%;width:${pctPot}%;background:#4A90D9;border-radius:5px;transition:width .6s"></div>
@@ -503,7 +506,7 @@ pages.pedidos=async function(){
   document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo pedido</button>`;
   document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
   try{
-    _PED_ROWS=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,data_aprovacao,mes_meta,ano_meta,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
+    _PED_ROWS=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,data_aprovacao,mes_meta,ano_meta,tipo,valor_total,percentual_comissao,status,status_entrada,status_saida,clientes(nome)&order=data_pedido.desc&limit=300');
     document.getElementById('ct').innerHTML=`
     <div class="sbar">
       <input type="text" placeholder="Cliente ou Nº..." id="bp2" autocomplete="off" oninput="renderPedidos(this.value,document.getElementById('sp').value,document.getElementById('d1').value,document.getElementById('d2').value)" style="flex:1;min-width:100px">
@@ -515,7 +518,7 @@ pages.pedidos=async function(){
       <button class="btn bs" style="white-space:nowrap" onclick="document.getElementById('sp').value='Pendente';renderPedidos('','Pendente','','')">⏳ Pendentes</button>
     </div>
     <div class="card"><div class="ov"><table>
-      <thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Tipo</th><th></th></tr></thead>
+      <thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>%</th><th>Status</th><th>Entrada</th><th>Saída</th><th></th></tr></thead>
       <tbody id="ped-table"></tbody>
     </table></div></div>`;
     renderPedidos();
@@ -532,8 +535,10 @@ function renderPedidos(f='',sf='',di='',df=''){
   tbl.innerHTML=rows.map(r=>`<tr>
     <td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${r.clientes?.nome||'—'}</td>
     <td>${R(r.valor_total)}</td>
+    <td style="font-size:11px;color:var(--tx2)">${r.percentual_comissao?N(r.percentual_comissao)+'%':'—'}</td>
     <td><span class="badge ${SBG(r.status)}">${r.status}</span>${r.data_aprovacao?`<div style="font-size:10px;color:var(--tx2);margin-top:2px">${D(r.data_aprovacao)}</div>`:''}</td>
-    <td>${r.tipo==='Programado'?`<span class="badge bgi">📅 ${r.data_entrega?D(r.data_entrega):''}</span>`:'—'}</td>
+    <td><span class="badge ${SCONF(r.status_entrada)}" title="${r.status_entrada||'Pendente'}">${LCONF(r.status_entrada)}</span></td>
+    <td><span class="badge ${SCONF(r.status_saida)}" title="${r.status_saida||'Pendente'}">${LCONF(r.status_saida)}</span></td>
     <td style="white-space:nowrap">${r.status==='Pendente'?`<button class="btn bs" style="color:#1D9E75;margin-right:3px" onclick="aprovarPedido(${r.id})" title="Aprovar">✅</button>`:''}<button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
   </tr>`).join('');
 }
@@ -582,6 +587,7 @@ async function fmP(id=null){
       </div>
     </div>
     <div class="fg"><label>Valor (R$)</label><input type="number" id="pv" value="${p.valor_total||''}" step="0.01"></div>
+    <div class="fg"><label>% Comissão</label><input type="number" id="p-pct" value="${p.percentual_comissao||''}" step="0.5" min="0" max="20" placeholder="0"></div>
     <div class="fg"><label>Status</label><select id="ps" onchange="document.getElementById('fg-aprov').style.display=this.value!=='Pendente'?'flex':'none'">
       <option value="Aprovado" ${(!p.status||p.status==='Aprovado')?'selected':''}>Aprovado</option>
       <option value="Pendente" ${p.status==='Pendente'?'selected':''}>⏳ Pendente</option>
@@ -612,7 +618,8 @@ async function svP(id){
   if(tipo==='Programado'&&!entrega){snk('Informe a data de entrega');return}
   const status=document.getElementById('ps').value;
   const aprovDate=status!=='Pendente'?(document.getElementById('p-aprov')?.value||document.getElementById('pd').value):null;
-  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,updated_at:new Date().toISOString()};
+  const pct=parseFloat(document.getElementById('p-pct')?.value||0)||0;
+  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,percentual_comissao:pct||null,comissao_esperada:pct>0?Math.round(parseFloat(v)*pct/100*100)/100:null,updated_at:new Date().toISOString()};
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
 }
 async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
@@ -1853,6 +1860,8 @@ async function rqSalvar(proximo){
       data_aprovacao:aprovDate||null,
       mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,
       ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,
+      percentual_comissao:pct||null,
+      comissao_esperada:pct>0?Math.round(val*pct/100*100)/100:null,
       observacao:`Rápido|Tab:${RQ_TAB}${pct}%`});
     RQ_HOJE++;
     const cnt=document.getElementById('rq-cnt');if(cnt)cnt.textContent=RQ_HOJE;
@@ -1875,6 +1884,123 @@ document.addEventListener('click',e=>{
   const d=document.getElementById('rq-cli-drop');
   if(d&&!d.contains(e.target)&&e.target.id!=='rq-cli-txt')d.style.display='none';
 });
+
+// ── CONFERÊNCIA ───────────────────────────────────────────────────────────────
+pages.conferencia=async function(){
+  const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+  document.getElementById('ta').innerHTML='';
+  document.getElementById('ct').innerHTML=`
+  <div class="sbar" style="margin-bottom:12px">
+    <select id="conf-mes" style="width:auto">
+      ${MESES.map((nm,i)=>`<option value="${i+1}"${i+1===mes?' selected':''}>${nm}</option>`).join('')}
+    </select>
+    <input type="number" id="conf-ano" value="${ano}" style="width:80px">
+    <button class="btn bp" onclick="carregarConferencia()">🔍 Carregar</button>
+  </div>
+  <div id="conf-result"><div class="al ali">Selecione mês/ano e clique em Carregar.</div></div>`;
+};
+async function carregarConferencia(){
+  const mes=parseInt(document.getElementById('conf-mes')?.value||new Date().getMonth()+1);
+  const ano=parseInt(document.getElementById('conf-ano')?.value||new Date().getFullYear());
+  const el=document.getElementById('conf-result');
+  if(!el)return;
+  el.innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    const mesStr=String(mes).padStart(2,'0');
+    const dtFim=mes<12?`${ano}-${String(mes+1).padStart(2,'0')}-01`:`${ano+1}-01-01`;
+    const sel='id,numero_pedido,data_pedido,data_aprovacao,valor_total,percentual_comissao,status,status_entrada,status_saida,valor_entrada,valor_saida,comissao_esperada,comissao_recebida,clientes(nome)';
+    const[aprov,pend]=await Promise.all([
+      sb('pedidos','GET',null,`?mes_meta=eq.${mes}&ano_meta=eq.${ano}&status=in.(Aprovado,Importado,Faturado)&select=${sel}&order=data_pedido`),
+      sb('pedidos','GET',null,`?data_pedido=gte.${ano}-${mesStr}-01&data_pedido=lt.${dtFim}&status=eq.Pendente&select=${sel}&order=data_pedido`)
+    ]);
+    const rows=[...aprov,...pend].sort((a,b)=>(a.data_pedido||'').localeCompare(b.data_pedido||''));
+    window._CONF_ROWS=rows;window._CONF_MES=mes;window._CONF_ANO=ano;
+    function rowBg(r){
+      const se=r.status_entrada,ss=r.status_saida;
+      if(se==='NaoEncontrado'||ss==='NaoEncontrado')return'var(--bgd)';
+      const difE=r.valor_entrada&&r.valor_total?Math.abs(r.valor_entrada-r.valor_total)/r.valor_total:0;
+      const difC=r.comissao_recebida&&r.comissao_esperada?Math.abs(r.comissao_recebida-r.comissao_esperada)/(r.comissao_esperada||1):0;
+      if(difE>0.10||difC>0.10)return'var(--bgw)';
+      return'';
+    }
+    function difPct(a,b){
+      if(!a||!b)return'<span style="color:var(--tx3)">—</span>';
+      const d=Math.round((parseFloat(a)-parseFloat(b))/parseFloat(b)*100);
+      return`<span style="color:${Math.abs(d)>10?'var(--txd)':'var(--txs)'}">${d>0?'+':''}${d}%</span>`;
+    }
+    const totVal=rows.reduce((s,r)=>s+parseFloat(r.valor_total||0),0);
+    const totEnt=rows.filter(r=>r.valor_entrada).reduce((s,r)=>s+parseFloat(r.valor_entrada||0),0);
+    const totEsp=rows.filter(r=>r.comissao_esperada).reduce((s,r)=>s+parseFloat(r.comissao_esperada||0),0);
+    const totRec=rows.filter(r=>r.comissao_recebida).reduce((s,r)=>s+parseFloat(r.comissao_recebida||0),0);
+    const nDiv=rows.filter(r=>rowBg(r)).length;
+    el.innerHTML=`
+    <div class="rowb" style="margin-bottom:8px">
+      <span style="font-size:12px;font-weight:500">${rows.length} pedido(s) — ${MESES[mes-1]}/${ano}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${nDiv>0?`<span class="badge bgw">${nDiv} divergência(s)</span>`:'<span class="badge bgs">Sem divergências</span>'}
+        <button class="btn bs" onclick="exportarConferencia()">⬇ CSV</button>
+      </div>
+    </div>
+    <div class="card"><div class="ov"><table>
+      <thead><tr>
+        <th>Cliente</th><th>Nº</th><th>Data</th>
+        <th style="text-align:right">Valor lançado</th>
+        <th style="text-align:right">Valor entrada</th>
+        <th style="text-align:center">Dif.%</th>
+        <th style="text-align:right">Com. esperada</th>
+        <th style="text-align:right">Com. recebida</th>
+        <th style="text-align:center">Dif.%</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>{
+        const bg=rowBg(r);
+        return`<tr${bg?` style="background:${bg}"`:''}>
+          <td>${r.clientes?.nome||'—'}</td>
+          <td>${r.numero_pedido||'—'}</td>
+          <td>${D(r.data_pedido)}</td>
+          <td style="text-align:right">${R(r.valor_total)}</td>
+          <td style="text-align:right">${r.valor_entrada?R(r.valor_entrada):'<span style="color:var(--tx3)">—</span>'}</td>
+          <td style="text-align:center">${difPct(r.valor_entrada,r.valor_total)}</td>
+          <td style="text-align:right">${r.comissao_esperada?R(r.comissao_esperada):'<span style="color:var(--tx3)">—</span>'}</td>
+          <td style="text-align:right">${r.comissao_recebida?R(r.comissao_recebida):'<span style="color:var(--tx3)">—</span>'}</td>
+          <td style="text-align:center">${difPct(r.comissao_recebida,r.comissao_esperada)}</td>
+          <td style="white-space:nowrap">
+            <span class="badge ${SBG(r.status)}">${r.status}</span>
+            <span class="badge ${SCONF(r.status_entrada)}" style="margin-left:3px" title="Entrada">${LCONF(r.status_entrada)}</span>
+            <span class="badge ${SCONF(r.status_saida)}" style="margin-left:2px" title="Saída">${LCONF(r.status_saida)}</span>
+          </td>
+        </tr>`;
+      }).join('')}
+      <tr style="font-weight:500;background:var(--bg2)">
+        <td colspan="3">Total</td>
+        <td style="text-align:right">${R(totVal)}</td>
+        <td style="text-align:right">${totEnt?R(totEnt):'—'}</td><td></td>
+        <td style="text-align:right">${totEsp?R(totEsp):'—'}</td>
+        <td style="text-align:right">${totRec?R(totRec):'—'}</td>
+        <td></td><td></td>
+      </tr>
+      </tbody>
+    </table></div></div>`;
+  }catch(e){el.innerHTML=`<div class="al alr">${e.message}</div>`}
+}
+function exportarConferencia(){
+  const rows=window._CONF_ROWS||[];
+  const mes=String(window._CONF_MES||'').padStart(2,'0');
+  const ano=window._CONF_ANO||'';
+  const hdr=['Cliente','Nº Pedido','Data','Valor','Valor Entrada','Dif% Entrada','Com.Esperada','Com.Recebida','Dif% Comissão','Status'].join(';');
+  const linhas=rows.map(r=>[
+    r.clientes?.nome||'',r.numero_pedido||'',r.data_pedido||'',
+    parseFloat(r.valor_total||0).toFixed(2),
+    r.valor_entrada||'',
+    r.valor_entrada&&r.valor_total?((parseFloat(r.valor_entrada)-parseFloat(r.valor_total))/parseFloat(r.valor_total)*100).toFixed(1):'',
+    r.comissao_esperada||'',r.comissao_recebida||'',
+    r.comissao_recebida&&r.comissao_esperada?((parseFloat(r.comissao_recebida)-parseFloat(r.comissao_esperada))/parseFloat(r.comissao_esperada)*100).toFixed(1):'',
+    r.status
+  ].join(';'));
+  const blob=new Blob(['﻿'+[hdr,...linhas].join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`conferencia_${mes}_${ano}.csv`;a.click();
+}
 
 function sbToggle(){
   const sb=document.querySelector('.sb'),ov=document.getElementById('sb-overlay');
