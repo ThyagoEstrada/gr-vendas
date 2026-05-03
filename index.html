@@ -312,6 +312,7 @@ function mdl(html){const o=document.createElement('div');o.className='ov2';o.inn
 function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`)?.classList.toggle('on',`${p}${s}`===id);document.getElementById(`tp-${p}${s}`)?.classList.toggle('hide',`${p}${s}`!==id)})}
 
 let CC=[],TC=[],CL=[],SC=[];
+let _CLI_ROWS=null,_CLI_U={},_PED_ROWS=null;
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
 const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido'};
 
@@ -390,25 +391,41 @@ pages.dashboard=async function(){
 };
 
 // ═══ CLIENTES ════════════════════════════════════════════════════════════════
-pages.clientes=async function(f='',sf=''){
+pages.clientes=async function(){
   document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmC()">+ Novo</button>`;
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
   try{
-    let rows=await sb('clientes','GET',null,'?select=id,codigo,nome,status,cidade_id,grupo_id,cidades(cidade),grupos_economicos(nome)&order=nome');
-    const u={};(await sb('pedidos','GET',null,'?select=cliente_id,data_pedido&order=data_pedido.desc&limit=500')).forEach(p=>{if(!u[p.cliente_id])u[p.cliente_id]=p.data_pedido});
-    const fil=rows.filter(r=>(!f||r.nome.toLowerCase().includes(f.toLowerCase()))&&(!sf||r.status===sf));
+    _CLI_ROWS=await sb('clientes','GET',null,'?select=id,codigo,nome,status,cidade_id,grupo_id,cidades(cidade),grupos_economicos(nome)&order=nome');
+    _CLI_U={};(await sb('pedidos','GET',null,'?select=cliente_id,data_pedido&order=data_pedido.desc&limit=500')).forEach(p=>{if(!_CLI_U[p.cliente_id])_CLI_U[p.cliente_id]=p.data_pedido});
     document.getElementById('ct').innerHTML=`
     <div class="sbar">
-      <input type="text" placeholder="Buscar cliente..." value="${f}" id="bc" oninput="pages.clientes(this.value,document.getElementById('sc').value)">
-      <select id="sc" onchange="pages.clientes(document.getElementById('bc').value,this.value)" style="width:auto">
-        <option value="">Todos</option><option value="ativo" ${sf==='ativo'?'selected':''}>Ativo</option><option value="inativo" ${sf==='inativo'?'selected':''}>Inativo</option>
+      <input type="text" placeholder="Buscar cliente..." id="bc" autocomplete="off" oninput="renderClientes(this.value,document.getElementById('sc').value)">
+      <select id="sc" onchange="renderClientes(document.getElementById('bc').value,this.value)" style="width:auto">
+        <option value="">Todos</option><option value="ativo">Ativo</option><option value="inativo">Inativo</option>
       </select>
-      <span style="font-size:11px;color:var(--tx2);align-self:center">${fil.length} clientes</span>
+      <span id="cli-cnt" style="font-size:11px;color:var(--tx2);align-self:center"></span>
     </div>
-    <div class="card"><div class="ov"><table><thead><tr><th>Cliente</th><th>Cidade</th><th>Status</th><th>Últ. pedido</th><th></th></tr></thead>
-    <tbody>${fil.map(r=>`<tr><td>${r.nome}</td><td>${r.cidades?.cidade||'—'}</td><td><span class="badge ${r.status==='ativo'?'bgs':'bgd'}">${r.status}</span></td><td>${D(u[r.id])||'—'}</td><td><button class="btn bs" onclick="fmC(${r.id})">Editar</button></td></tr>`).join('')}
-    </tbody></table></div></div>`;
+    <div class="card"><div class="ov"><table>
+      <thead><tr><th>Cliente</th><th>Cidade</th><th>Status</th><th>Últ. pedido</th><th></th></tr></thead>
+      <tbody id="cli-table"></tbody>
+    </table></div></div>`;
+    renderClientes();
   }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
 };
+function renderClientes(f='',sf=''){
+  if(!_CLI_ROWS)return;
+  const fil=_CLI_ROWS.filter(r=>
+    (!f||r.nome.toLowerCase().includes(f.toLowerCase())||(r.codigo&&String(r.codigo).includes(f)))
+    &&(!sf||r.status===sf));
+  const cnt=document.getElementById('cli-cnt');if(cnt)cnt.textContent=fil.length+' clientes';
+  const tbl=document.getElementById('cli-table');if(!tbl)return;
+  tbl.innerHTML=fil.map(r=>`<tr>
+    <td>${r.nome}</td><td>${r.cidades?.cidade||'—'}</td>
+    <td><span class="badge ${r.status==='ativo'?'bgs':'bgd'}">${r.status}</span></td>
+    <td style="font-size:11px;color:var(--tx2)">${D(_CLI_U[r.id])||'—'}</td>
+    <td><button class="btn bs" onclick="fmC(${r.id})">Editar</button></td>
+  </tr>`).join('');
+}
 async function fmC(id=null){
   const c=id?(await sb('clientes','GET',null,`?id=eq.${id}&select=*,grupos_economicos(id,nome)`))[0]:{};
   let GR=[];try{GR=await sb('grupos_economicos','GET',null,'?order=nome')}catch(e){}
@@ -433,29 +450,42 @@ async function svC(id){
 async function dlC(id){if(!confirm('Excluir?'))return;await sb('clientes','DELETE',null,`?id=eq.${id}`);CL=[];document.querySelector('.ov2')?.remove();snk('Excluído');pages.clientes()}
 
 // ═══ PEDIDOS ═════════════════════════════════════════════════════════════════
-pages.pedidos=async function(f='',sf='',di='',df=''){
+pages.pedidos=async function(){
   document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo pedido</button>`;
   document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
   try{
-    let rows=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
-    if(f)rows=rows.filter(r=>r.clientes?.nome?.toLowerCase().includes(f.toLowerCase())||r.numero_pedido?.includes(f));
-    if(sf)rows=rows.filter(r=>r.status===sf);
-    if(di)rows=rows.filter(r=>r.data_pedido>=di);
-    if(df)rows=rows.filter(r=>r.data_pedido<=df);
+    _PED_ROWS=await sb('pedidos','GET',null,'?select=id,numero_pedido,data_pedido,data_entrega,tipo,valor_total,status,clientes(nome)&order=data_pedido.desc&limit=300');
     document.getElementById('ct').innerHTML=`
     <div class="sbar">
-      <input type="text" placeholder="Cliente ou Nº..." id="bp2" value="${f}" oninput="pages.pedidos(this.value,document.getElementById('sp').value,document.getElementById('d1').value,document.getElementById('d2').value)" style="flex:1;min-width:100px">
-      <input type="date" id="d1" value="${di}" onchange="pages.pedidos(document.getElementById('bp2').value,document.getElementById('sp').value,this.value,document.getElementById('d2').value)" style="width:130px">
-      <input type="date" id="d2" value="${df}" onchange="pages.pedidos(document.getElementById('bp2').value,document.getElementById('sp').value,document.getElementById('d1').value,this.value)" style="width:130px">
-      <select id="sp" onchange="pages.pedidos(document.getElementById('bp2').value,this.value,document.getElementById('d1').value,document.getElementById('d2').value)" style="width:auto">
+      <input type="text" placeholder="Cliente ou Nº..." id="bp2" autocomplete="off" oninput="renderPedidos(this.value,document.getElementById('sp').value,document.getElementById('d1').value,document.getElementById('d2').value)" style="flex:1;min-width:100px">
+      <input type="date" id="d1" onchange="renderPedidos(document.getElementById('bp2').value,document.getElementById('sp').value,this.value,document.getElementById('d2').value)" style="width:130px">
+      <input type="date" id="d2" onchange="renderPedidos(document.getElementById('bp2').value,document.getElementById('sp').value,document.getElementById('d1').value,this.value)" style="width:130px">
+      <select id="sp" onchange="renderPedidos(document.getElementById('bp2').value,this.value,document.getElementById('d1').value,document.getElementById('d2').value)" style="width:auto">
         <option value="">Todos</option><option>Pendente</option><option>Importado</option><option>Faturado</option><option>Cancelado</option>
       </select>
     </div>
-    <div class="card"><div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Tipo</th><th></th></tr></thead>
-    <tbody>${rows.map(r=>`<tr><td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${r.clientes?.nome||'—'}</td><td>${R(r.valor_total)}</td><td><span class="badge ${SBG(r.status)}">${r.status}</span></td><td>${r.tipo==='Programado'?`<span class="badge bgi">📅 ${r.data_entrega?D(r.data_entrega):''}</span>`:'—'}</td><td><button class="btn bs" onclick="fmP(${r.id})">Editar</button></td></tr>`).join('')}
-    </tbody></table></div></div>`;
+    <div class="card"><div class="ov"><table>
+      <thead><tr><th>Nº Pedido</th><th>Data</th><th>Cliente</th><th>Valor</th><th>Status</th><th>Tipo</th><th></th></tr></thead>
+      <tbody id="ped-table"></tbody>
+    </table></div></div>`;
+    renderPedidos();
   }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro ao carregar pedidos: ${e.message}</div>`}
 };
+function renderPedidos(f='',sf='',di='',df=''){
+  if(!_PED_ROWS)return;
+  let rows=[..._PED_ROWS];
+  if(f)rows=rows.filter(r=>r.clientes?.nome?.toLowerCase().includes(f.toLowerCase())||r.numero_pedido?.includes(f));
+  if(sf)rows=rows.filter(r=>r.status===sf);
+  if(di)rows=rows.filter(r=>r.data_pedido>=di);
+  if(df)rows=rows.filter(r=>r.data_pedido<=df);
+  const tbl=document.getElementById('ped-table');if(!tbl)return;
+  tbl.innerHTML=rows.map(r=>`<tr>
+    <td>${r.numero_pedido||'—'}</td><td>${D(r.data_pedido)}</td><td>${r.clientes?.nome||'—'}</td>
+    <td>${R(r.valor_total)}</td><td><span class="badge ${SBG(r.status)}">${r.status}</span></td>
+    <td>${r.tipo==='Programado'?`<span class="badge bgi">📅 ${r.data_entrega?D(r.data_entrega):''}</span>`:'—'}</td>
+    <td><button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
+  </tr>`).join('');
+}
 
 pages.programados=async function(){
   document.getElementById('ta').innerHTML=`<button class="btn bp" onclick="fmP()">+ Novo programado</button>`;
@@ -1637,10 +1667,6 @@ pages.rapido=async function(){
       <span style="font-size:13px;color:var(--tx2)">%</span>
     </div>
   </div>
-  <div class="rq-card">
-    <label class="rq-label">Observação (opcional)</label>
-    <input id="rq-obs" placeholder="Ex: urgente, retirada..." style="font-size:14px;padding:8px 10px">
-  </div>
   <div style="display:flex;gap:10px;margin-bottom:24px">
     <button class="btn bp" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(true)">✅ Salvar e próximo</button>
     <button class="btn" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(false)">💾 Salvar e fechar</button>
@@ -1718,7 +1744,6 @@ async function rqSalvar(proximo){
   const data=document.getElementById('rq-data')?.value||T();
   const prog=document.getElementById('rq-prog')?.checked;
   const entrega=prog?(document.getElementById('rq-entrega')?.value||''):'';
-  const obs=(document.getElementById('rq-obs')?.value||'').trim();
   if(!cid){snk('Selecione o cliente');document.getElementById('rq-cli-txt')?.focus();return}
   if(!val||val<=0){snk('Informe o valor');document.getElementById('rq-val')?.focus();return}
   if(!RQ_TAB){snk('Selecione a tabela');return}
@@ -1729,14 +1754,14 @@ async function rqSalvar(proximo){
   try{
     await sb('pedidos','POST',{data_pedido:data,cliente_id:parseInt(cid),valor_total:val,
       status:'Pendente',tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
-      observacao:obs?`Rápido|Tab:${RQ_TAB}${pct}%|${obs}`:`Rápido|Tab:${RQ_TAB}${pct}%`});
+      observacao:`Rápido|Tab:${RQ_TAB}${pct}%`});
     RQ_HOJE++;
     const cnt=document.getElementById('rq-cnt');if(cnt)cnt.textContent=RQ_HOJE;
     const label=RQ_CLI_NOME.length>22?RQ_CLI_NOME.slice(0,22)+'…':RQ_CLI_NOME;
     snk(`✅ ${label} — ${R(val)}`);
     if(proximo){
       RQ_CLI_ID=null;RQ_CLI_NOME='';RQ_TAB='';RQ_PCT=null;
-      ['rq-cli-txt','rq-val','rq-obs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+      ['rq-cli-txt','rq-val'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
       const h=document.getElementById('rq-cli');if(h)h.value='';
       const p=document.getElementById('rq-prog');if(p)p.checked=false;
       const ew=document.getElementById('rq-entrega-wrap');if(ew)ew.style.display='none';
