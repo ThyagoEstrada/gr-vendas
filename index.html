@@ -588,12 +588,14 @@ async function fmP(id=null){
     </div>
     <div class="fg"><label>Valor (R$)</label><input type="number" id="pv" value="${p.valor_total||''}" step="0.01"></div>
     <div class="fg"><label>% Comissão</label><input type="number" id="p-pct" value="${p.percentual_comissao||''}" step="0.5" min="0" max="20" placeholder="0"></div>
-    <div class="fg"><label>Status</label><select id="ps" onchange="document.getElementById('fg-aprov').style.display=this.value!=='Pendente'?'flex':'none'">
+    <div class="fg"><label>Status</label><select id="ps" onchange="document.getElementById('fg-aprov').style.display=['Aprovado','Importado','Faturado'].includes(this.value)?'flex':'none'">
       <option value="Aprovado" ${(!p.status||p.status==='Aprovado')?'selected':''}>Aprovado</option>
       <option value="Pendente" ${p.status==='Pendente'?'selected':''}>⏳ Pendente</option>
-      ${p.status&&!['Aprovado','Pendente'].includes(p.status)?`<option value="${p.status}" selected>${p.status}</option>`:''}
+      <option value="Importado" ${p.status==='Importado'?'selected':''}>Importado</option>
+      <option value="Faturado" ${p.status==='Faturado'?'selected':''}>Faturado</option>
+      <option value="Cancelado" ${p.status==='Cancelado'?'selected':''}>Cancelado</option>
     </select></div>
-    <div class="fg" id="fg-aprov" style="display:${(!p.status||p.status!=='Pendente')?'flex':'none'}">
+    <div class="fg" id="fg-aprov" style="display:${['Aprovado','Importado','Faturado'].includes(p.status)||!p.status?'flex':'none'}">
       <label>Data aprovação</label><input type="date" id="p-aprov" value="${p.data_aprovacao||p.data_pedido||T()}">
     </div>
     <div class="fg"><label>Tipo</label><select id="ptp" onchange="document.getElementById('fg-entrega').style.display=this.value==='Programado'?'flex':'none'">
@@ -617,7 +619,7 @@ async function svP(id){
   const entrega=tipo==='Programado'?(document.getElementById('pde')?.value||null):null;
   if(tipo==='Programado'&&!entrega){snk('Informe a data de entrega');return}
   const status=document.getElementById('ps').value;
-  const aprovDate=status!=='Pendente'?(document.getElementById('p-aprov')?.value||document.getElementById('pd').value):null;
+  const aprovDate=['Aprovado','Importado','Faturado'].includes(status)?(document.getElementById('p-aprov')?.value||document.getElementById('pd').value):null;
   const pct=parseFloat(document.getElementById('p-pct')?.value||0)||0;
   const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,percentual_comissao:pct||null,comissao_esperada:pct>0?Math.round(parseFloat(v)*pct/100*100)/100:null,updated_at:new Date().toISOString()};
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
