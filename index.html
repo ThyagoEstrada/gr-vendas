@@ -399,32 +399,62 @@ pages.clientes=async function(){
     _CLI_U={};(await sb('pedidos','GET',null,'?select=cliente_id,data_pedido&order=data_pedido.desc&limit=500')).forEach(p=>{if(!_CLI_U[p.cliente_id])_CLI_U[p.cliente_id]=p.data_pedido});
     document.getElementById('ct').innerHTML=`
     <div class="sbar">
-      <input type="text" placeholder="Buscar cliente..." id="bc" autocomplete="off" oninput="renderClientes(this.value,document.getElementById('sc').value)">
-      <select id="sc" onchange="renderClientes(document.getElementById('bc').value,this.value)" style="width:auto">
-        <option value="">Todos</option><option value="ativo">Ativo</option><option value="inativo">Inativo</option>
+      <input type="text" placeholder="Nome ou código..." id="bc" autocomplete="off"
+        oninput="renderClientes(this.value,document.getElementById('sc').value,document.getElementById('scc').value)"
+        onkeydown="if(event.key==='Enter')renderClientes(this.value,document.getElementById('sc').value,document.getElementById('scc').value)"
+        style="flex:1;min-width:120px">
+      <select id="sc" onchange="renderClientes(document.getElementById('bc').value,this.value,document.getElementById('scc').value)" style="width:auto">
+        <option value="">Todos status</option><option value="ativo">Ativo</option><option value="inativo">Inativo</option>
       </select>
-      <span id="cli-cnt" style="font-size:11px;color:var(--tx2);align-self:center"></span>
+      <select id="scc" onchange="renderClientes(document.getElementById('bc').value,document.getElementById('sc').value,this.value)" style="width:auto">
+        <option value="">Todos</option><option value="com">Com código</option><option value="sem">Sem código</option>
+      </select>
+      <span id="cli-cnt" style="font-size:11px;color:var(--tx2);align-self:center;white-space:nowrap"></span>
     </div>
     <div class="card"><div class="ov"><table>
-      <thead><tr><th>Cliente</th><th>Cidade</th><th>Status</th><th>Últ. pedido</th><th></th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Código</th><th>Cidade</th><th>Status</th><th>Últ. pedido</th><th></th></tr></thead>
       <tbody id="cli-table"></tbody>
     </table></div></div>`;
     renderClientes();
   }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">${e.message}</div>`}
 };
-function renderClientes(f='',sf=''){
+function renderClientes(f='',sf='',cc=''){
   if(!_CLI_ROWS)return;
-  const fil=_CLI_ROWS.filter(r=>
-    (!f||r.nome.toLowerCase().includes(f.toLowerCase())||(r.codigo&&String(r.codigo).includes(f)))
-    &&(!sf||r.status===sf));
+  const ft=f.trim();
+  const isNum=/^\d+$/.test(ft);
+  const fLow=ft.toLowerCase();
+  // Filtrar
+  let fil=_CLI_ROWS.filter(r=>{
+    if(sf&&r.status!==sf)return false;
+    if(cc==='com'&&!r.codigo)return false;
+    if(cc==='sem'&&r.codigo)return false;
+    if(!ft)return true;
+    const cod=String(r.codigo||'');
+    if(isNum)return cod.includes(ft)||r.nome.toLowerCase().includes(fLow);
+    return r.nome.toLowerCase().includes(fLow)||(r.codigo&&cod.includes(ft));
+  });
+  // Ordenar: match exato de código primeiro, depois clientes com código, depois sem
+  const exact=isNum&&ft?fil.find(r=>String(r.codigo||'')===ft):null;
+  fil.sort((a,b)=>{
+    if(exact){const ae=a.id===exact.id,be=b.id===exact.id;if(ae&&!be)return-1;if(be&&!ae)return 1;}
+    return(a.codigo?0:1)-(b.codigo?0:1)||a.nome.localeCompare(b.nome);
+  });
   const cnt=document.getElementById('cli-cnt');if(cnt)cnt.textContent=fil.length+' clientes';
   const tbl=document.getElementById('cli-table');if(!tbl)return;
-  tbl.innerHTML=fil.map(r=>`<tr>
-    <td>${r.nome}</td><td>${r.cidades?.cidade||'—'}</td>
-    <td><span class="badge ${r.status==='ativo'?'bgs':'bgd'}">${r.status}</span></td>
-    <td style="font-size:11px;color:var(--tx2)">${D(_CLI_U[r.id])||'—'}</td>
-    <td><button class="btn bs" onclick="fmC(${r.id})">Editar</button></td>
-  </tr>`).join('');
+  tbl.innerHTML=fil.map(r=>{
+    const isExact=exact&&r.id===exact.id;
+    const codChip=r.codigo
+      ?`<span class="chip"${isExact?' style="background:var(--bgi);color:var(--txi);border-color:var(--txi)"':''}>${r.codigo}</span>`
+      :`<span style="color:var(--tx3);font-size:11px">—</span>`;
+    return`<tr${isExact?' style="background:var(--bgi)"':''}>
+      <td>${r.nome}</td>
+      <td>${codChip}</td>
+      <td>${r.cidades?.cidade||'—'}</td>
+      <td><span class="badge ${r.status==='ativo'?'bgs':'bgd'}">${r.status}</span></td>
+      <td style="font-size:11px;color:var(--tx2)">${D(_CLI_U[r.id])||'—'}</td>
+      <td><button class="btn bs" onclick="fmC(${r.id})">Editar</button></td>
+    </tr>`;
+  }).join('');
 }
 async function fmC(id=null){
   const c=id?(await sb('clientes','GET',null,`?id=eq.${id}&select=*,grupos_economicos(id,nome)`))[0]:{};
