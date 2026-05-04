@@ -300,6 +300,103 @@ def conferir_entradas(linhas, mes, ano):
                         'valor_sistema': str(map_ped[np]['valor_total'])})
     return divs
 
+# ─── VINCULAR PEDIDOS MANUAIS AO PDF ─────────────────────────────────────────
+def vincular_pedidos(linhas, mes, ano):
+    """Cruza pedidos sem numero_pedido com entradas do PDF (fuzzy >= 85%, valor +-10%)."""
+    import calendar
+    from difflib import SequenceMatcher
+
+    print(f"\n🔗 Vinculando pedidos manuais ao PDF de {mes:02d}/{ano}...")
+
+    # Agregar valor total por numero_pedido (soma das linhas de tabela, sem estornos)
+    ent_map = {}
+    for l in linhas:
+        if l.get('eh_estorno'):
+            continue
+        np = l['numero_pedido']
+        if np not in ent_map:
+            ent_map[np] = {'numero_pedido': np, 'cliente_nome': l['cliente_nome'],
+                           'data_pedido': l['data_pedido'], 'valor': 0.0, 'matched': False}
+        ent_map[np]['valor'] += l['valor']
+
+    # Pedidos sem numero_pedido do mesmo mês/ano
+    primeiro = f"{ano}-{mes:02d}-01"
+    ultimo_dia = calendar.monthrange(ano, mes)[1]
+    ultimo = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
+    pedidos_sem_np = sb_get('pedidos',
+        f'?numero_pedido=is.null'
+        f'&data_pedido=gte.{primeiro}&data_pedido=lte.{ultimo}'
+        f'&select=id,cliente_id,valor_total,data_pedido')
+
+    clientes = sb_get('clientes', '?select=id,nome')
+    cli_map = {c['id']: c['nome'] for c in clientes}
+
+    vinculados, sem_match = [], []
+
+    for ped in pedidos_sem_np:
+        ped_nome = cli_map.get(ped['cliente_id'], '').upper().strip()
+        ped_valor = float(ped['valor_total'] or 0)
+        best_np, best_score = None, 0.0
+
+        for np, ent in ent_map.items():
+            if ent['matched']:
+                continue
+            score = SequenceMatcher(None, ped_nome, ent['cliente_nome'].upper().strip()).ratio()
+            if score < 0.85:
+                continue
+            max_v = max(ped_valor, ent['valor'])
+            if max_v > 0 and abs(ped_valor - ent['valor']) / max_v > 0.10:
+                continue
+            if score > best_score:
+                best_score, best_np = score, np
+
+        if best_np:
+            ent_map[best_np]['matched'] = True
+            sb_patch('pedidos',
+                {'numero_pedido': best_np, 'status': 'Importado',
+                 'valor_total': ent_map[best_np]['valor'],
+                 'updated_at': datetime.now().isoformat()},
+                f'?id=eq.{ped["id"]}')
+            vinculados.append({'pedido_id': ped['id'], 'numero_pedido': best_np,
+                               'cliente': cli_map.get(ped['cliente_id'], '?'),
+                               'score': round(best_score * 100)})
+        else:
+            sem_match.append({'pedido_id': ped['id'],
+                              'cliente': cli_map.get(ped['cliente_id'], '?'),
+                              'valor': ped_valor})
+
+    sem_pedido = [e for e in ent_map.values() if not e['matched']]
+
+    # Limpar divergências anteriores deste tipo e registrar novas
+    sb_delete('divergencias', f'?campo_divergente=eq.nao_encontrado_no_pdf&mes=eq.{mes}&ano=eq.{ano}')
+    sb_delete('divergencias', f'?campo_divergente=eq.pedido_nao_lancado&mes=eq.{mes}&ano=eq.{ano}')
+    divs = []
+    for p in sem_match:
+        divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano,
+                     'numero_pedido': f'PED_{p["pedido_id"]}',
+                     'campo_divergente': 'nao_encontrado_no_pdf',
+                     'valor_pdf': '—', 'valor_sistema': p['cliente']})
+    for e in sem_pedido:
+        divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano,
+                     'numero_pedido': e['numero_pedido'],
+                     'campo_divergente': 'pedido_nao_lancado',
+                     'valor_pdf': str(round(e['valor'], 2)), 'valor_sistema': '—'})
+    if divs:
+        sb_post('divergencias', divs)
+
+    print(f"   ✅ {len(vinculados)} pedido(s) vinculado(s) com sucesso")
+    for v in vinculados:
+        print(f"      → {v['cliente']} ↔ NP {v['numero_pedido']} ({v['score']}%)")
+    print(f"   ⚠️  {len(sem_match)} pedido(s) seu(s) sem match no PDF (lançou mas não entrou)")
+    for p in sem_match:
+        print(f"      → {p['cliente']} | R$ {p['valor']:,.2f}")
+    print(f"   📋 {len(sem_pedido)} entrada(s) do PDF sem pedido seu (não lançou)")
+    for e in sem_pedido:
+        print(f"      → {e['numero_pedido']} | {e['cliente_nome']} | R$ {e['valor']:,.2f}")
+
+    return {'vinculados': len(vinculados), 'sem_match': len(sem_match), 'sem_pedido': len(sem_pedido)}
+
+
 # ─── PROCESSAR UM PDF ─────────────────────────────────────────────────────────
 def processar_pdf(path):
     nome = os.path.basename(path)
@@ -337,6 +434,9 @@ def processar_pdf(path):
                 print(f"   ⚠️  {len(divs)} divergência(s) encontrada(s)")
             else:
                 print(f"   ✅ Sem divergências")
+
+            # Vincular pedidos manuais do mesmo período
+            vincular_pedidos(linhas, mes, ano)
 
             total = sum(l['valor'] for l in linhas if not l['eh_estorno'])
             print(f"   💰 Total líquido: R$ {total:,.2f}")

@@ -1929,7 +1929,9 @@ pages.conferencia=async function(){
     </select>
     <input type="number" id="conf-ano" value="${ano}" style="width:80px">
     <button class="btn bp" onclick="carregarConferencia()">🔍 Carregar</button>
+    <button class="btn bs" onclick="analisarVinculacao()">🔗 Vincular manuais</button>
   </div>
+  <div id="vinc-result"></div>
   <div id="conf-result"><div class="al ali">Selecione mês/ano e clique em Carregar.</div></div>`;
 };
 async function carregarConferencia(){
@@ -2033,6 +2035,121 @@ function exportarConferencia(){
   const blob=new Blob(['﻿'+[hdr,...linhas].join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`conferencia_${mes}_${ano}.csv`;a.click();
+}
+
+// ── VINCULAR PEDIDOS MANUAIS ──────────────────────────────────────────────────
+let _vincData=null;
+function strSim(a,b){
+  a=(a||'').toUpperCase().trim();b=(b||'').toUpperCase().trim();
+  if(a===b)return 1;if(!a||!b)return 0;
+  const m=a.length,n=b.length;
+  let prev=Array.from({length:n+1},(_,i)=>i);
+  for(let i=1;i<=m;i++){
+    const cur=[i];
+    for(let j=1;j<=n;j++)
+      cur[j]=a[i-1]===b[j-1]?prev[j-1]:1+Math.min(prev[j-1],prev[j],cur[j-1]);
+    prev=cur;
+  }
+  return 1-prev[n]/Math.max(m,n);
+}
+async function analisarVinculacao(){
+  const mes=parseInt(document.getElementById('conf-mes')?.value||new Date().getMonth()+1);
+  const ano=parseInt(document.getElementById('conf-ano')?.value||new Date().getFullYear());
+  const el=document.getElementById('vinc-result');
+  if(!el)return;
+  el.innerHTML='<div class="ld">Analisando pedidos manuais...</div>';
+  try{
+    const mesStr=String(mes).padStart(2,'0');
+    const dtFim=mes<12?`${ano}-${String(mes+1).padStart(2,'0')}-01`:`${ano+1}-01-01`;
+    const[entradas,pedidosSemNP,clientes]=await Promise.all([
+      sb('entradas','GET',null,`?mes=eq.${mes}&ano=eq.${ano}`),
+      sb('pedidos','GET',null,`?numero_pedido=is.null&data_pedido=gte.${ano}-${mesStr}-01&data_pedido=lt.${dtFim}&select=id,cliente_id,valor_total,data_pedido`),
+      sb('clientes','GET',null,'?select=id,nome')
+    ]);
+    const cliMap={};clientes.forEach(c=>cliMap[c.id]=c.nome);
+    // Agregar entradas por numero_pedido
+    const entMap={};
+    entradas.forEach(e=>{
+      if(!entMap[e.numero_pedido])
+        entMap[e.numero_pedido]={numero_pedido:e.numero_pedido,cliente_nome:e.cliente_nome,data_pedido:e.data_pedido,valor:0,matched:false};
+      entMap[e.numero_pedido].valor+=parseFloat(e.valor||0);
+    });
+    // Dry-run do cruzamento
+    const vinculados=[],semMatch=[],semPedido=[];
+    pedidosSemNP.forEach(ped=>{
+      const pedNome=(cliMap[ped.cliente_id]||'').toUpperCase().trim();
+      const pedValor=parseFloat(ped.valor_total||0);
+      let bestNP=null,bestScore=0,bestValPDF=0;
+      Object.values(entMap).forEach(ent=>{
+        if(ent.matched)return;
+        const sc=strSim(pedNome,ent.cliente_nome);
+        if(sc<0.85)return;
+        const maxV=Math.max(pedValor,ent.valor);
+        if(maxV>0&&Math.abs(pedValor-ent.valor)/maxV>0.10)return;
+        if(sc>bestScore){bestScore=sc;bestNP=ent.numero_pedido;bestValPDF=ent.valor}
+      });
+      if(bestNP){
+        entMap[bestNP].matched=true;
+        vinculados.push({pedido_id:ped.id,cliente:cliMap[ped.cliente_id]||'?',
+          numero_pedido:bestNP,score:Math.round(bestScore*100),
+          valor_ped:pedValor,valor_pdf:bestValPDF});
+      }else{
+        semMatch.push({pedido_id:ped.id,cliente:cliMap[ped.cliente_id]||'?',valor:pedValor});
+      }
+    });
+    Object.values(entMap).forEach(e=>{if(!e.matched)semPedido.push(e)});
+    _vincData={mes,ano,vinculados,semMatch,semPedido};
+    el.innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <div class="rowb" style="margin-bottom:10px">
+        <span style="font-weight:500;font-size:13px">Vincular pedidos manuais — ${MESES[mes-1]}/${ano}</span>
+        ${vinculados.length?`<button class="btn bp bs" onclick="vincularAgora()">🔗 Vincular agora (${vinculados.length})</button>`:''}
+      </div>
+      <div class="g3" style="margin-bottom:${vinculados.length||semMatch.length||semPedido.length?'12':'0'}px">
+        <div class="mt"><div class="ml">Vinculáveis</div><div class="mv" style="color:#1D9E75">${vinculados.length}</div><div class="ms">pedidos com match no PDF</div></div>
+        <div class="mt"><div class="ml">Você lançou — sem match</div><div class="mv" style="color:var(--txw)">${semMatch.length}</div><div class="ms">lançou mas não entrou no PDF</div></div>
+        <div class="mt"><div class="ml">No PDF — sem pedido seu</div><div class="mv" style="color:var(--txd)">${semPedido.length}</div><div class="ms">estava no PDF, não lançou</div></div>
+      </div>
+      ${vinculados.length?`<div class="al ali" style="margin-bottom:0"><strong>Matches encontrados:</strong> ${vinculados.map(v=>`${v.cliente} → NP ${v.numero_pedido} (${v.score}%)`).join(' | ')}</div>`:''}
+      ${!vinculados.length&&!semMatch.length&&!semPedido.length?'<div class="al als" style="margin-bottom:0">Nenhum pedido manual encontrado para este período.</div>':''}
+    </div>
+    ${semMatch.length?`<div class="card" style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:500;color:var(--txw);margin-bottom:6px">VOCÊ LANÇOU — SEM MATCH NO PDF (${semMatch.length})</div>
+      <div class="al alw" style="margin-bottom:8px">Pedidos lançados por você que não aparecem no PDF de entradas.</div>
+      <div class="ov"><table><thead><tr><th>Cliente</th><th>Valor lançado</th></tr></thead>
+      <tbody>${semMatch.map(p=>`<tr><td>${p.cliente}</td><td>${R(p.valor)}</td></tr>`).join('')}</tbody></table></div>
+    </div>`:''}
+    ${semPedido.length?`<div class="card" style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:500;color:var(--txd);margin-bottom:6px">NO PDF — SEM PEDIDO SEU (${semPedido.length})</div>
+      <div class="al alr" style="margin-bottom:8px">Entradas no PDF sem pedido correspondente no sistema.</div>
+      <div class="ov"><table><thead><tr><th>Nº Pedido</th><th>Cliente PDF</th><th>Valor PDF</th></tr></thead>
+      <tbody>${semPedido.map(e=>`<tr><td><span class="chip">${e.numero_pedido}</span></td><td>${e.cliente_nome}</td><td>${R(e.valor)}</td></tr>`).join('')}</tbody></table></div>
+    </div>`:''}`;
+  }catch(e){el.innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+}
+async function vincularAgora(){
+  if(!_vincData||!_vincData.vinculados.length){snk('Nada para vincular');return}
+  const{mes,ano,vinculados,semMatch,semPedido}=_vincData;
+  snk('Vinculando...');
+  try{
+    await Promise.all(vinculados.map(v=>
+      sb('pedidos','PATCH',
+        {numero_pedido:v.numero_pedido,status:'Importado',
+         valor_total:v.valor_pdf,updated_at:new Date().toISOString()},
+        `?id=eq.${v.pedido_id}`)
+    ));
+    await sb('divergencias','DELETE',null,`?campo_divergente=eq.nao_encontrado_no_pdf&mes=eq.${mes}&ano=eq.${ano}`);
+    await sb('divergencias','DELETE',null,`?campo_divergente=eq.pedido_nao_lancado&mes=eq.${mes}&ano=eq.${ano}`);
+    const divs=[
+      ...semMatch.map(p=>({tipo:'entrada',mes,ano,numero_pedido:`PED_${p.pedido_id}`,
+        campo_divergente:'nao_encontrado_no_pdf',valor_pdf:'—',valor_sistema:p.cliente})),
+      ...semPedido.map(e=>({tipo:'entrada',mes,ano,numero_pedido:e.numero_pedido,
+        campo_divergente:'pedido_nao_lancado',valor_pdf:String(e.valor.toFixed(2)),valor_sistema:'—'}))
+    ];
+    if(divs.length)await sb('divergencias','POST',divs);
+    CL=[];snk(`✅ ${vinculados.length} pedido(s) vinculado(s)!`);
+    analisarVinculacao();
+  }catch(e){snk('Erro: '+e.message)}
 }
 
 function sbToggle(){
