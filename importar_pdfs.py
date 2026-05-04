@@ -272,14 +272,113 @@ def parse_saidas(texto, mes, ano):
 
     return linhas
 
-# ─── CADASTRAR CLIENTES NOVOS ─────────────────────────────────────────────────
-def ensure_clientes(nomes):
-    existentes = sb_get('clientes', '?select=nome')
-    set_exist = {c['nome'].upper().strip() for c in existentes}
-    novos = list({n.strip() for n in nomes if n and n.upper().strip() not in set_exist})
-    for nome in novos:
-        sb_post('clientes', {'nome': nome, 'status': 'ativo'})
-    return novos
+# ─── VINCULAR PEDIDOS MANUAIS AO PDF ─────────────────────────────────────────
+def vincular_pedidos(linhas, mes, ano):
+    """Cruza pedidos sem numero_pedido com entradas do PDF (fuzzy >= 85%, valor +-10%)."""
+    import calendar
+    from difflib import SequenceMatcher
+
+    print(f"   🔗 Iniciando vinculação de pedidos manuais...")
+
+    # Agregar valor total por numero_pedido (soma das linhas de tabela, sem estornos)
+    ent_map = {}
+    for l in linhas:
+        if l.get('eh_estorno'):
+            continue
+        np = l['numero_pedido']
+        if np not in ent_map:
+            ent_map[np] = {'numero_pedido': np, 'cliente_nome': l['cliente_nome'],
+                           'data_pedido': l['data_pedido'], 'valor': 0.0, 'matched': False}
+        ent_map[np]['valor'] += l['valor']
+
+    print(f"   🔗 {len(ent_map)} pedido(s) distintos no PDF")
+
+    # Pedidos sem numero_pedido do mesmo mês/ano
+    primeiro = f"{ano}-{mes:02d}-01"
+    ultimo_dia = calendar.monthrange(ano, mes)[1]
+    ultimo = f"{ano}-{mes:02d}-{ultimo_dia:02d}"
+    pedidos_sem_np = sb_get('pedidos',
+        f'?numero_pedido=is.null'
+        f'&data_pedido=gte.{primeiro}&data_pedido=lte.{ultimo}'
+        f'&select=id,cliente_id,valor_total,data_pedido')
+
+    print(f"   🔗 {len(pedidos_sem_np)} pedido(s) manual(is) encontrado(s) para {mes:02d}/{ano}")
+
+    if not pedidos_sem_np:
+        # Checar entradas sem pedido mesmo sem manuais
+        sem_pedido = list(ent_map.values())
+        if sem_pedido:
+            print(f"   📋 {len(sem_pedido)} entrada(s) no PDF sem pedido lançado")
+        return
+
+    clientes = sb_get('clientes', '?select=id,nome')
+    cli_map = {c['id']: c['nome'] for c in clientes}
+
+    vinculados, sem_match = [], []
+
+    for ped in pedidos_sem_np:
+        ped_nome = cli_map.get(ped['cliente_id'], '').upper().strip()
+        ped_valor = float(ped['valor_total'] or 0)
+        best_np, best_score = None, 0.0
+
+        for np, ent in ent_map.items():
+            if ent['matched']:
+                continue
+            score = SequenceMatcher(None, ped_nome, ent['cliente_nome'].upper().strip()).ratio()
+            if score < 0.85:
+                continue
+            max_v = max(ped_valor, ent['valor'])
+            if max_v > 0 and abs(ped_valor - ent['valor']) / max_v > 0.10:
+                continue
+            if score > best_score:
+                best_score, best_np = score, np
+
+        if best_np:
+            ent_map[best_np]['matched'] = True
+            sb_patch('pedidos',
+                {'numero_pedido': best_np, 'status': 'Importado',
+                 'valor_total': ent_map[best_np]['valor'],
+                 'updated_at': datetime.now().isoformat()},
+                f'?id=eq.{ped["id"]}')
+            vinculados.append({'pedido_id': ped['id'], 'numero_pedido': best_np,
+                               'cliente': cli_map.get(ped['cliente_id'], '?'),
+                               'score': round(best_score * 100)})
+        else:
+            sem_match.append({'pedido_id': ped['id'],
+                              'cliente': cli_map.get(ped['cliente_id'], '?'),
+                              'valor': ped_valor})
+
+    sem_pedido = [e for e in ent_map.values() if not e['matched']]
+
+    # Limpar divergências anteriores deste tipo e registrar novas
+    sb_delete('divergencias', f'?campo_divergente=eq.nao_encontrado_no_pdf&mes=eq.{mes}&ano=eq.{ano}')
+    sb_delete('divergencias', f'?campo_divergente=eq.pedido_nao_lancado&mes=eq.{mes}&ano=eq.{ano}')
+    divs = []
+    for p in sem_match:
+        divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano,
+                     'numero_pedido': f'PED_{p["pedido_id"]}',
+                     'campo_divergente': 'nao_encontrado_no_pdf',
+                     'valor_pdf': '—', 'valor_sistema': p['cliente']})
+    for e in sem_pedido:
+        divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano,
+                     'numero_pedido': e['numero_pedido'],
+                     'campo_divergente': 'pedido_nao_lancado',
+                     'valor_pdf': str(round(e['valor'], 2)), 'valor_sistema': '—'})
+    if divs:
+        sb_post('divergencias', divs)
+
+    print(f"   ✅ {len(vinculados)} pedido(s) vinculado(s) com sucesso")
+    for v in vinculados:
+        print(f"      → {v['cliente']} ↔ NP {v['numero_pedido']} ({v['score']}%)")
+    if sem_match:
+        print(f"   ⚠️  {len(sem_match)} pedido(s) seu(s) sem match no PDF")
+        for p in sem_match:
+            print(f"      → {p['cliente']} | R$ {p['valor']:,.2f}")
+    if sem_pedido:
+        print(f"   📋 {len(sem_pedido)} entrada(s) do PDF sem pedido seu")
+        for e in sem_pedido:
+            print(f"      → {e['numero_pedido']} | {e['cliente_nome']} | R$ {e['valor']:,.2f}")
+
 
 # ─── CONFERIR DIVERGÊNCIAS DE ENTRADA ────────────────────────────────────────
 def conferir_entradas(linhas, mes, ano):
@@ -417,11 +516,6 @@ def processar_pdf(path):
                 print("   ⚠️  Nenhuma linha extraída. Verifique o formato do PDF.")
                 return
 
-            # Cadastrar clientes novos
-            novos = ensure_clientes([l['cliente_nome'] for l in linhas])
-            if novos:
-                print(f"   ✅ {len(novos)} cliente(s) novo(s) cadastrado(s)")
-
             # Salvar entradas
             sb_delete('entradas', f'?mes=eq.{mes}&ano=eq.{ano}')
             sb_post('entradas', linhas)
@@ -448,11 +542,6 @@ def processar_pdf(path):
             if not linhas:
                 print("   ⚠️  Nenhuma linha extraída. Verifique o formato do PDF.")
                 return
-
-            # Cadastrar clientes novos
-            novos = ensure_clientes([l['cliente_nome'] for l in linhas])
-            if novos:
-                print(f"   ✅ {len(novos)} cliente(s) novo(s) cadastrado(s)")
 
             # Salvar saídas
             sb_delete('saidas', f'?mes=eq.{mes}&ano=eq.{ano}')
