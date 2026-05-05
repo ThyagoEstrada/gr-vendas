@@ -111,12 +111,12 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
 .rq-btn.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
 .rq-btn:hover:not(.on){background:var(--bg2)}
 /* ── MOBILE ────────────────────────────────────────────────────────────────── */
-#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:49;cursor:pointer}
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:299;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #sb-tog{display:none;background:none;border:none;font-size:22px;line-height:1;padding:0 4px;cursor:pointer;color:var(--tx);flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .sb{transition:transform .22s ease}
 @media(max-width:640px){
   /* Sidebar deslizante */
-  .sb{position:fixed;top:0;left:0;height:100vh;z-index:50;width:220px;transform:translateX(-100%);box-shadow:none}
+  .sb{position:fixed;top:0;left:0;height:100vh;z-index:300;width:220px;transform:translateX(-100%);box-shadow:none;overflow-y:scroll;-webkit-overflow-scrolling:touch}
   .sb.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.18)}
   #sb-tog{display:flex}
   /* Topbar */
@@ -898,16 +898,18 @@ function vCelCliente(r,i){
   const raw=`<div style="font-size:11px;color:var(--tx2)">${r.cliente_raw}</div>`;
   const incBadge=r._cliente_incerto&&!r._resolved?'<span style="font-size:10px;background:var(--bgw);color:var(--txw);border-radius:3px;padding:1px 4px;margin-left:4px">⚠️ incerto</span>':'';
   if(r._novo_form){
-    const cidOpts=CC.map(c=>`<option value="${c.id}"${r._novoCliente?.cidade_id==c.id?' selected':''}>${c.cidade}${c.estado?' - '+c.estado:''}</option>`).join('');
-    return raw+`<div style="margin-top:5px;display:flex;flex-direction:column;gap:5px">
-      <input id="voz-nome-${i}" value="${(r._novoCliente?.nome||r.cliente_raw).replace(/"/g,'&quot;')}" placeholder="Nome" style="padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;width:100%;max-width:240px">
-      <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <input id="voz-cod-${i}" type="number" value="${r._novoCliente?.codigo||''}" placeholder="Código *" style="width:80px;padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px">
-        <select id="voz-cid-${i}" style="padding:4px 6px;border:.5px solid var(--bo2);border-radius:4px;background:var(--bg);color:var(--tx);font-size:12px;flex:1;min-width:120px"><option value="">— Cidade —</option>${cidOpts}</select>
-      </div>
-      <div style="display:flex;gap:4px">
-        <button class="btn bp" style="font-size:11px;padding:3px 8px" onclick="vConfirmarNovoCliente(${i})">✓ OK</button>
-        <button class="btn bs" style="font-size:11px;padding:3px 8px" onclick="vCancelarNovo(${i})">✕</button>
+    const cidOpts=CC.map(c=>`<option value="${c.id}"${r._novoCliente?.cidade_id==c.id?' selected':''}>${c.cidade}${c.estado?' — '+c.estado:''}</option>`).join('');
+    const fs='width:100%;padding:5px 8px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit;font-size:12px';
+    return raw+`<div style="margin-top:6px;padding:8px 10px;background:var(--bg2);border:.5px solid var(--bo);border-radius:var(--r)">
+      <div style="font-size:11px;font-weight:500;color:var(--txi);margin-bottom:6px">Novo cliente</div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <input id="voz-nome-${i}" value="${(r._novoCliente?.nome||r.cliente_raw).replace(/"/g,'&quot;')}" placeholder="Nome *" style="${fs}">
+        <input id="voz-cod-${i}" type="number" value="${r._novoCliente?.codigo||''}" placeholder="Código (opcional)" style="${fs}">
+        <select id="voz-cid-${i}" style="${fs}"><option value="">— Cidade —</option>${cidOpts}</select>
+        <div style="display:flex;gap:6px;margin-top:1px">
+          <button class="btn bp" style="flex:1;font-size:12px;padding:5px 0" onclick="vConfirmarNovoCliente(${i})">✓ OK</button>
+          <button class="btn bs" style="font-size:12px;padding:5px 10px" onclick="vCancelarNovo(${i})">✕</button>
+        </div>
       </div>
     </div>`;
   }
@@ -973,11 +975,11 @@ function vSelecionarCliente(idx,val){
 function vConfirmarNovoCliente(idx){
   const r=VOZ_RESULTADO[idx];
   const nome=(document.getElementById(`voz-nome-${idx}`)?.value||'').trim();
-  const codigo=(document.getElementById(`voz-cod-${idx}`)?.value||'').trim();
+  const codStr=(document.getElementById(`voz-cod-${idx}`)?.value||'').trim();
   const cidade_id=document.getElementById(`voz-cid-${idx}`)?.value||null;
-  if(!codigo){snk('Informe o código do cliente');return}
   if(!nome){snk('Informe o nome do cliente');return}
-  r._novoCliente={nome,codigo:parseInt(codigo),cidade_id:cidade_id?parseInt(cidade_id):null};
+  const codigo=codStr?parseInt(codStr):null;
+  r._novoCliente={nome,codigo,cidade_id:cidade_id?parseInt(cidade_id):null};
   r.cliente_nome=nome;r.cliente_id='__novo__';r._resolved=true;r._novo_form=false;
   vRenderPreview();
 }
