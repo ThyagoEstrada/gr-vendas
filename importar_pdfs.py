@@ -562,7 +562,8 @@ def processar_pdf(path):
                 print("   ⚠️  Nenhuma linha extraída. Verifique o formato do PDF.")
                 return
 
-            # Salvar saídas
+            # Salvar saídas (limpa também registros com mes=0 do mesmo ano)
+            sb_delete('saidas', f'?mes=eq.0&ano=eq.{ano}')
             sb_delete('saidas', f'?mes=eq.{mes}&ano=eq.{ano}')
             sb_post('saidas', linhas)
 
