@@ -673,7 +673,7 @@ async function svP(id){
     }
   }
   const pct=parseFloat(document.getElementById('p-pct')?.value||0)||0;
-  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,percentual_comissao:pct||null,comissao_esperada:pct>0?Math.round(parseFloat(v)*pct/100*100)/100:null,updated_at:new Date().toISOString()};
+  const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1])||null:null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0])||null:null,percentual_comissao:pct||null,comissao_esperada:pct>0?Math.round(parseFloat(v)*pct/100*100)/100:null,updated_at:new Date().toISOString()};
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
 }
 async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
@@ -1004,12 +1004,32 @@ async function confirmarVoz(){
       if(cid==='__novo__'){
         const nd=p._novoCliente||{nome:p.cliente_raw,codigo:null,cidade_id:null};
         const novo=await sb('clientes','POST',{nome:nd.nome,codigo:nd.codigo||null,cidade_id:nd.cidade_id||null,status:'ativo'});
+        if(!novo||!novo[0]?.id)throw new Error(`Falha ao cadastrar cliente "${nd.nome}"`);
         cid=novo[0].id;
         CL.push({id:cid,nome:nd.nome,status:'ativo',codigo:nd.codigo||null});
       }
-      await sb('pedidos','POST',{data_pedido:p.data,cliente_id:cid,valor_total:p.valor,status:'Pendente',tipo:p.tipo,data_entrega:p.data_entrega||null,observacao:`Voz | Tab: ${p.tabela} ${p.percentual}%`});
+      const pct=parseFloat(p.percentual)||0;
+      // Programado: calcular data_aprovacao = data_entrega - dias_antes_meta
+      let aprovDate=null;
+      if(p.tipo==='Programado'&&p.data_entrega){
+        const diasAntes=parseInt(PARAMS.dias_antes_meta||45);
+        const dtA=new Date(p.data_entrega+'T00:00:00');
+        dtA.setDate(dtA.getDate()-diasAntes);
+        aprovDate=dtA.toISOString().split('T')[0];
+      }
+      await sb('pedidos','POST',{
+        data_pedido:p.data,cliente_id:cid,valor_total:p.valor,
+        status:'Pendente',tipo:p.tipo,data_entrega:p.data_entrega||null,
+        data_aprovacao:aprovDate||null,
+        mes_meta:aprovDate?parseInt(aprovDate.split('-')[1])||null:null,
+        ano_meta:aprovDate?parseInt(aprovDate.split('-')[0])||null:null,
+        percentual_comissao:pct||null,
+        comissao_esperada:pct>0?Math.round(p.valor*pct/100*100)/100:null,
+        updated_at:new Date().toISOString(),
+        observacao:`Voz|Tab:${p.tabela} ${p.percentual}%`
+      });
       salvos++;
-    }catch(e){erros++;}
+    }catch(e){erros++;console.error('Erro ao salvar pedido (voz):',e.message);}
   }
   document.querySelector('.voz-confirm')?.remove();
   document.getElementById('voz-preview').insertAdjacentHTML('beforeend',
@@ -1809,6 +1829,10 @@ pages.rapido=async function(){
     <input type="number" id="rq-val" inputmode="decimal" placeholder="0,00" step="0.01" min="0"
       style="font-size:24px;font-weight:500;padding:12px 14px;border:.5px solid var(--bo2);border-radius:var(--r);width:100%;background:var(--bg);color:var(--tx);font-family:inherit;text-align:right">
   </div>
+  <div style="margin-bottom:10px">
+    <input type="text" id="rq-num" placeholder="Nº Pedido (opcional — se já tiver o número)"
+      style="font-size:13px;padding:8px 10px;border:.5px solid var(--bo);border-radius:var(--r);width:100%;background:var(--bg);color:var(--tx);font-family:inherit">
+  </div>
   <button id="rq-pend-btn" class="btn" style="width:100%;min-height:44px;font-size:15px;margin-bottom:10px" onclick="rqTogglePendente()">✅ Aprovado</button>
   <div class="rq-card">
     <label class="rq-label">Tabela</label>
@@ -1827,7 +1851,7 @@ pages.rapido=async function(){
     <button class="btn bp" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(true)">✅ Salvar e próximo</button>
     <button class="btn" style="flex:1;min-height:52px;font-size:15px" onclick="rqSalvar(false)">💾 Salvar e fechar</button>
   </div>`;
-  rqRenderTabs();rqRenderPct();
+  rqRenderTabs();rqRenderPct();rqSetPendente(false);
 };
 function rqRenderTabs(){
   const el=document.getElementById('rq-tabs-btns');if(!el)return;
@@ -1893,6 +1917,7 @@ async function rqSalvarNovoCliente(){
   if(!codigo){snk('Informe o código do cliente');return}
   try{
     const novo=await sb('clientes','POST',{nome,codigo:parseInt(codigo),cidade_id:cidade_id?parseInt(cidade_id):null,status:'ativo'});
+    if(!novo||!novo[0]?.id)throw new Error('Falha ao cadastrar cliente — tente novamente');
     const id=novo[0].id;
     CL.push({id,nome,status:'ativo',codigo:parseInt(codigo)});
     CL.sort((a,b)=>a.nome.localeCompare(b.nome));
@@ -1927,21 +1952,23 @@ async function rqSalvar(proximo){
         aprovDate=data;
       }
     }
-    await sb('pedidos','POST',{data_pedido:data,cliente_id:parseInt(cid),valor_total:val,
+    const rqNum=document.getElementById('rq-num')?.value?.trim()||null;
+    await sb('pedidos','POST',{data_pedido:data,numero_pedido:rqNum,cliente_id:parseInt(cid),valor_total:val,
       status:sts,tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
       data_aprovacao:aprovDate||null,
-      mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,
-      ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,
+      mes_meta:aprovDate?parseInt(aprovDate.split('-')[1])||null:null,
+      ano_meta:aprovDate?parseInt(aprovDate.split('-')[0])||null:null,
       percentual_comissao:pct||null,
       comissao_esperada:pct>0?Math.round(val*pct/100*100)/100:null,
-      observacao:`Rápido|Tab:${RQ_TAB}${pct}%`});
+      updated_at:new Date().toISOString(),
+      observacao:`Rápido|Tab:${RQ_TAB} ${pct}%`});
     RQ_HOJE++;
     const cnt=document.getElementById('rq-cnt');if(cnt)cnt.textContent=RQ_HOJE;
     const label=RQ_CLI_NOME.length>22?RQ_CLI_NOME.slice(0,22)+'…':RQ_CLI_NOME;
     snk(`✅ ${label} — ${R(val)}`);
     if(proximo){
       RQ_CLI_ID=null;RQ_CLI_NOME='';RQ_TAB='';RQ_PCT=null;
-      ['rq-cli-txt','rq-val'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); rqSetPendente(false);
+      ['rq-cli-txt','rq-val','rq-num'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); rqSetPendente(false);
       const h=document.getElementById('rq-cli');if(h)h.value='';
       const p=document.getElementById('rq-prog');if(p)p.checked=false;
       const ew=document.getElementById('rq-entrega-wrap');if(ew)ew.style.display='none';
@@ -2116,8 +2143,8 @@ async function salvarParam(chave){
   if(val===undefined||val===''){snk('Valor não pode ser vazio');return}
   try{
     await sb('parametros','PATCH',{valor:String(val),updated_at:new Date().toISOString()},`?chave=eq.${chave}`);
-    PARAMS[chave]=String(val);
-    snk(`✅ ${chave} salvo!`);
+    PARAMS={}; // força recarregamento do DB na próxima navegação
+    snk(`✅ Salvo!`);
   }catch(e){snk('Erro: '+e.message)}
 }
 async function salvarTodosParams(){
