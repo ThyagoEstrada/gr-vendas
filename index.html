@@ -172,7 +172,8 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
     <div class="ni" data-p="cidades"><span>📍</span><span>Cidades</span></div>
     <div class="ni" data-p="tabelas"><span>📋</span><span>Tabelas</span></div>
     <div class="ni" data-p="grupos"><span>🏢</span><span>Grupos</span></div>
-    <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div></div>
+    <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div>
+    <div class="ni" data-p="parametros"><span>⚙️</span><span>Parâmetros</span></div></div>
   <div class="ns"><div class="nl">Vendas</div>
     <div class="ni" data-p="rapido" style="color:var(--txi)"><span>⚡</span><span>Lançamento Rápido</span></div>
     <div class="ni" data-p="pedidos"><span>📦</span><span>Pedidos</span></div>
@@ -316,10 +317,20 @@ function stab(p,id){['i','r'].forEach(s=>{document.getElementById(`tab-${p}${s}`
 
 let CC=[],TC=[],CL=[],SC=[];
 let _CLI_ROWS=null,_CLI_U={},_PED_ROWS=null,_DASH_MES=0,_DASH_ANO=0;
+let PARAMS={};
+async function carregarParams(){
+  try{
+    const rows=await sb('parametros','GET',null,'?select=chave,valor');
+    rows.forEach(r=>PARAMS[r.chave]=r.valor);
+  }catch(e){
+    PARAMS={meta_mensal:'370000',dias_antes_meta:'45',tolerancia_vinculacao:'10',score_minimo_match:'85'};
+  }
+}
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',parametros:'Parâmetros do sistema',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência'};
 
 async function go(p){
+  if(!Object.keys(PARAMS).length) await carregarParams();
   document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('on',n.dataset.p===p));
   document.getElementById('ptitle').textContent=TITLES[p]||p;
   document.getElementById('ta').innerHTML='';
@@ -383,7 +394,7 @@ async function carregarDashboard(){
     console.log(`[Dashboard] ${mes}/${ano} | Aprovados: meta=${pdAprovMeta.length} fb=${pdAprovFb.length} total=${pdAprov.length} R$${tAprov.toFixed(2)} | Pendentes: meta=${pdPendMeta.length} fb=${pdPendFb.length} total=${pdPend.length} R$${tPend.toFixed(2)}`);
     const tS=sa.reduce((s,p)=>s+parseFloat(p.valor||0),0);
     const tC=sa.reduce((s,p)=>s+parseFloat(p.comissao||0),0);
-    const meta=370000;
+    const meta=parseFloat(PARAMS.meta_mensal||370000);
     const pctAprov=Math.min(100,Math.round(tAprov/meta*100));
     const pctPot=Math.min(100,Math.round(tPot/meta*100));
     const progRows=prog.map(r=>{
@@ -570,7 +581,7 @@ function renderPedidos(f='',sf='',di='',df=''){
     <td><span class="badge ${SBG(r.status)}">${r.status}</span>${r.data_aprovacao?`<div style="font-size:10px;color:var(--tx2);margin-top:2px">${D(r.data_aprovacao)}</div>`:''}</td>
     <td><span class="badge ${SCONF(r.status_entrada)}" title="${r.status_entrada||'Pendente'}">${LCONF(r.status_entrada)}</span></td>
     <td><span class="badge ${SCONF(r.status_saida)}" title="${r.status_saida||'Pendente'}">${LCONF(r.status_saida)}</span></td>
-    <td style="white-space:nowrap">${r.status==='Pendente'?`<button class="btn bs" style="color:#1D9E75;margin-right:3px" onclick="aprovarPedido(${r.id})" title="Aprovar">✅</button>`:''}<button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
+    <td style="white-space:nowrap">${r.status==='Pendente'?`<button class="btn bs" style="color:#1D9E75;margin-right:3px" onclick="aprovarPedido(${r.id},${r.data_entrega?`'${r.data_entrega}'`:'null'})" title="Aprovar">✅</button>`:''}<button class="btn bs" onclick="fmP(${r.id})">Editar</button></td>
   </tr>`).join('');
 }
 
@@ -650,21 +661,40 @@ async function svP(id){
   const entrega=tipo==='Programado'?(document.getElementById('pde')?.value||null):null;
   if(tipo==='Programado'&&!entrega){snk('Informe a data de entrega');return}
   const status=document.getElementById('ps').value;
-  const aprovDate=['Aprovado','Importado','Faturado'].includes(status)?(document.getElementById('p-aprov')?.value||document.getElementById('pd').value):null;
+  let aprovDate=null;
+  if(['Aprovado','Importado','Faturado'].includes(status)){
+    const manualDate=document.getElementById('p-aprov')?.value;
+    if(tipo==='Programado'&&entrega&&!manualDate){
+      const diasAntes=parseInt(PARAMS.dias_antes_meta||45);
+      const dtA=new Date(entrega+'T00:00:00');
+      dtA.setDate(dtA.getDate()-diasAntes);
+      aprovDate=dtA.toISOString().split('T')[0];
+    }else{
+      aprovDate=manualDate||document.getElementById('pd').value;
+    }
+  }
   const pct=parseFloat(document.getElementById('p-pct')?.value||0)||0;
   const d={data_pedido:document.getElementById('pd').value,numero_pedido:document.getElementById('pn').value||null,cliente_id:parseInt(c),valor_total:parseFloat(v),status,observacao:document.getElementById('po').value||null,tipo,data_entrega:entrega,data_aprovacao:aprovDate||null,mes_meta:aprovDate?parseInt(aprovDate.split('-')[1]):null,ano_meta:aprovDate?parseInt(aprovDate.split('-')[0]):null,percentual_comissao:pct||null,comissao_esperada:pct>0?Math.round(parseFloat(v)*pct/100*100)/100:null,updated_at:new Date().toISOString()};
   try{id&&id!=='null'?await sb('pedidos','PATCH',d,`?id=eq.${id}`):await sb('pedidos','POST',d);document.querySelector('.ov2')?.remove();snk('Salvo!');pages.pedidos()}catch(e){snk('Erro ao salvar: '+e.message)}
 }
 async function dlP(id){if(!confirm('Excluir?'))return;await sb('pedidos','DELETE',null,`?id=eq.${id}`);document.querySelector('.ov2')?.remove();snk('Excluído');pages.pedidos()}
-function aprovarPedido(id){
+function aprovarPedido(id,dataEntrega=null){
+  let defaultDate=T();
+  if(dataEntrega){
+    const diasAntes=parseInt(PARAMS.dias_antes_meta||45);
+    const dtA=new Date(dataEntrega+'T00:00:00');
+    dtA.setDate(dtA.getDate()-diasAntes);
+    defaultDate=dtA.toISOString().split('T')[0];
+  }
   mdl(`<div class="rowb" style="margin-bottom:14px">
     <span style="font-weight:500">Aprovar pedido</span>
     <button class="btn bs" onclick="this.closest('.ov2').remove()">✕</button>
   </div>
-  <div class="fg" style="margin-bottom:16px">
+  <div class="fg" style="margin-bottom:6px">
     <label>Data de aprovação</label>
-    <input type="date" id="aprov-dt" value="${T()}" style="font-size:16px;padding:8px 10px">
+    <input type="date" id="aprov-dt" value="${defaultDate}" style="font-size:16px;padding:8px 10px">
   </div>
+  ${dataEntrega?`<div style="font-size:11px;color:var(--tx2);margin-bottom:16px">Sugestão: entrega ${D(dataEntrega)} − ${PARAMS.dias_antes_meta||45} dias</div>`:'<div style="margin-bottom:16px"></div>'}
   <div style="display:flex;justify-content:flex-end;gap:8px">
     <button class="btn bs" onclick="this.closest('.ov2').remove()">Cancelar</button>
     <button class="btn bp" onclick="confirmarAprovacao(${id})">✅ Confirmar aprovação</button>
@@ -1887,7 +1917,17 @@ async function rqSalvar(proximo){
   btns.forEach(b=>b.disabled=true);
   try{
     const sts=RQ_PENDENTE?'Pendente':'Aprovado';
-    const aprovDate=RQ_PENDENTE?null:data;
+    let aprovDate=null;
+    if(!RQ_PENDENTE){
+      if(prog&&entrega){
+        const diasAntes=parseInt(PARAMS.dias_antes_meta||45);
+        const dtA=new Date(entrega+'T00:00:00');
+        dtA.setDate(dtA.getDate()-diasAntes);
+        aprovDate=dtA.toISOString().split('T')[0];
+      }else{
+        aprovDate=data;
+      }
+    }
     await sb('pedidos','POST',{data_pedido:data,cliente_id:parseInt(cid),valor_total:val,
       status:sts,tipo:prog?'Programado':'Normal',data_entrega:entrega||null,
       data_aprovacao:aprovDate||null,
@@ -2037,6 +2077,56 @@ function exportarConferencia(){
   a.download=`conferencia_${mes}_${ano}.csv`;a.click();
 }
 
+// ── PARÂMETROS DO SISTEMA ─────────────────────────────────────────────────────
+const PARAM_META=[
+  {chave:'meta_mensal',      label:'Meta mensal de vendas',          icone:'🎯',suffix:'R$',
+   desc:'Valor da meta mensal exibida no dashboard e usada nos cálculos de progresso.'},
+  {chave:'dias_antes_meta',  label:'Dias antes da entrega para meta', icone:'📅',suffix:'dias',
+   desc:'Ao salvar ou aprovar um pedido programado, a data de aprovação (que define o mês da meta) é calculada subtraindo este valor da data de entrega.'},
+  {chave:'tolerancia_vinculacao',label:'Tolerância de valor na vinculação',icone:'⚖️',suffix:'%',
+   desc:'Diferença percentual máxima aceita entre o valor do pedido lançado e o valor no PDF para que o match seja considerado válido.'},
+  {chave:'score_minimo_match',label:'Score mínimo de similaridade de nome',icone:'🔤',suffix:'/ 100',
+   desc:'Pontuação mínima de similaridade de nome de cliente (0–100) para que dois registros sejam considerados o mesmo cliente na vinculação automática.'}
+];
+pages.parametros=async function(){
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando parâmetros...</div>';
+  try{
+    await carregarParams();
+    document.getElementById('ct').innerHTML=`
+    <div style="max-width:560px">
+      ${PARAM_META.map(p=>`
+      <div class="card" style="margin-bottom:12px">
+        <div class="rowb" style="margin-bottom:4px">
+          <span style="font-weight:500;font-size:14px">${p.icone} ${p.label}</span>
+          <span style="font-size:11px;color:var(--tx2)">${p.chave}</span>
+        </div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">${p.desc}</div>
+        <div class="row" style="gap:8px">
+          <input type="number" id="param-${p.chave}" value="${PARAMS[p.chave]||''}"
+            style="flex:1;font-size:15px;padding:7px 10px" min="0" step="1">
+          <span style="font-size:12px;color:var(--tx2);white-space:nowrap;align-self:center">${p.suffix}</span>
+          <button class="btn bp bs" onclick="salvarParam('${p.chave}')">Salvar</button>
+        </div>
+      </div>`).join('')}
+      <button class="btn bp" style="width:100%;margin-top:4px" onclick="salvarTodosParams()">💾 Salvar todos</button>
+    </div>`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+};
+async function salvarParam(chave){
+  const val=document.getElementById(`param-${chave}`)?.value;
+  if(val===undefined||val===''){snk('Valor não pode ser vazio');return}
+  try{
+    await sb('parametros','PATCH',{valor:String(val),updated_at:new Date().toISOString()},`?chave=eq.${chave}`);
+    PARAMS[chave]=String(val);
+    snk(`✅ ${chave} salvo!`);
+  }catch(e){snk('Erro: '+e.message)}
+}
+async function salvarTodosParams(){
+  try{
+    await Promise.all(PARAM_META.map(p=>salvarParam(p.chave)));
+  }catch(e){snk('Erro: '+e.message)}
+}
+
 // ── VINCULAR PEDIDOS MANUAIS ──────────────────────────────────────────────────
 let _vincData=null;
 function strSim(a,b){
@@ -2083,9 +2173,11 @@ async function analisarVinculacao(){
       Object.values(entMap).forEach(ent=>{
         if(ent.matched)return;
         const sc=strSim(pedNome,ent.cliente_nome);
-        if(sc<0.85)return;
+        const scoreMin=parseFloat(PARAMS.score_minimo_match||85)/100;
+        if(sc<scoreMin)return;
+        const tolPct=parseFloat(PARAMS.tolerancia_vinculacao||10)/100;
         const maxV=Math.max(pedValor,ent.valor);
-        if(maxV>0&&Math.abs(pedValor-ent.valor)/maxV>0.10)return;
+        if(maxV>0&&Math.abs(pedValor-ent.valor)/maxV>tolPct)return;
         if(sc>bestScore){bestScore=sc;bestNP=ent.numero_pedido;bestValPDF=ent.valor}
       });
       if(bestNP){
