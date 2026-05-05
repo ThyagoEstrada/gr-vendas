@@ -106,8 +106,6 @@ def detectar_info(texto, nome_arquivo=""):
         elif 'SAIDA' in nome_upper or 'SAÍDA' in nome_upper:
             tipo = 'saida'
         m = re.search(r'_(\d{1,2})_(\d{4})', nome_arquivo)
-        print(f"   [debug] nome={nome_arquivo} | regex={bool(m)}"
-              + (f" mes={m.group(1)} ano={m.group(2)}" if m else " (sem match)"))
         if m:
             mes = int(m.group(1))
             ano = int(m.group(2))
@@ -131,7 +129,6 @@ def detectar_info(texto, nome_arquivo=""):
             ano = int(m.group(3))
             fonte = "primeira_data"
 
-    print(f"   [debug] resultado: tipo={tipo} mes={mes} ano={ano} fonte={fonte}")
     return tipo, mes, ano
 
 # ─── PARSER DE ENTRADAS ───────────────────────────────────────────────────────
