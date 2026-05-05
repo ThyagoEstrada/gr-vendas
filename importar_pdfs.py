@@ -92,24 +92,46 @@ def parse_valor(s):
         return 0.0
 
 # ─── DETECTAR TIPO E MÊS/ANO ─────────────────────────────────────────────────
-def detectar_info(texto):
+def detectar_info(texto, nome_arquivo=""):
     tipo = "entrada" if ("Relatório de Entradas" in texto or "Data Pedido" in texto) else "saida"
     mes = 0
     ano = datetime.now().year
+    fonte = "?"
 
-    m = re.search(r'Mês[:\s]+(\d{1,2})', texto, re.I)
-    if m:
-        mes = int(m.group(1))
-    m = re.search(r'Ano[:\s]+(\d{4})', texto, re.I)
-    if m:
-        ano = int(m.group(1))
+    # 1. Extrair do nome do arquivo: ENTRADA_01_2026.pdf / SAIDA_04_2026.pdf
+    if nome_arquivo:
+        nome_upper = nome_arquivo.upper()
+        if 'ENTRADA' in nome_upper:
+            tipo = 'entrada'
+        elif 'SAIDA' in nome_upper or 'SAÍDA' in nome_upper:
+            tipo = 'saida'
+        m = re.search(r'_(\d{1,2})_(\d{4})', nome_arquivo)
+        print(f"   [debug] nome={nome_arquivo} | regex={bool(m)}"
+              + (f" mes={m.group(1)} ano={m.group(2)}" if m else " (sem match)"))
+        if m:
+            mes = int(m.group(1))
+            ano = int(m.group(2))
+            fonte = "nome_arquivo"
 
+    # 2. Cabeçalho do PDF (fallback)
+    if mes == 0:
+        m = re.search(r'Mês[:\s]+(\d{1,2})', texto, re.I)
+        if m:
+            mes = int(m.group(1))
+            fonte = "cabecalho_mes"
+        m2 = re.search(r'Ano[:\s]+(\d{4})', texto, re.I)
+        if m2:
+            ano = int(m2.group(1))
+
+    # 3. Primeira data encontrada no texto (último fallback)
     if mes == 0:
         m = re.search(r'(\d{2})/(\d{2})/(\d{4})', texto)
         if m:
             mes = int(m.group(2))
             ano = int(m.group(3))
+            fonte = "primeira_data"
 
+    print(f"   [debug] resultado: tipo={tipo} mes={mes} ano={ano} fonte={fonte}")
     return tipo, mes, ano
 
 # ─── PARSER DE ENTRADAS ───────────────────────────────────────────────────────
@@ -503,7 +525,7 @@ def processar_pdf(path):
 
     try:
         texto = extrair_texto(path)
-        tipo, mes, ano = detectar_info(texto)
+        tipo, mes, ano = detectar_info(texto, os.path.basename(path))
         MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
         mes_nome = MESES[mes-1] if 1 <= mes <= 12 else str(mes)
         print(f"   Tipo: {tipo.upper()} | Período: {mes_nome}/{ano}")
