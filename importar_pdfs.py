@@ -572,7 +572,8 @@ def processar_pdf(path):
             for l in linhas:
                 if l['tabela_codigo'] == 'X' or l['comissao'] == 0:
                     continue
-                calc = l['valor'] * (l['percentual'] + l['extra']) / 100
+                pct_calc = l['extra'] if l['extra'] > 0 else l['percentual']
+                calc = l['valor'] * pct_calc / 100
                 if abs(calc - l['comissao']) > 0.05:
                     divs.append({
                         'tipo': 'saida', 'mes': mes, 'ano': ano,
