@@ -183,7 +183,8 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
     <div class="ni" data-p="relatorios"><span>📊</span><span>Relatórios</span></div>
     <div class="ni" data-p="rel-anual"><span>🏆</span><span>Anual por Cliente</span></div>
     <div class="ni" data-p="conferencia"><span>🔍</span><span>Conferência</span></div>
-    <div class="ni" data-p="divergencias"><span>⚠️</span><span>Divergências</span></div></div>
+    <div class="ni" data-p="divergencias"><span>⚠️</span><span>Divergências</span></div>
+    <div class="ni" data-p="resultados"><span>📈</span><span>Resultados</span></div></div>
 </div>
 <div class="mn">
   <div class="tb"><button id="sb-tog" onclick="sbToggle()" aria-label="Menu">☰</button><h1 id="ptitle">Dashboard</h1><div class="row" style="gap:8px"><div id="user-info"></div><div class="row" id="ta"></div></div></div>
@@ -326,7 +327,7 @@ async function carregarParams(){
   }
 }
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',parametros:'Parâmetros do sistema',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',parametros:'Parâmetros do sistema',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência',resultados:'Resultados do Mês'};
 
 async function go(p){
   if(!Object.keys(PARAMS).length) await carregarParams();
@@ -2127,6 +2128,169 @@ function exportarConferencia(){
   a.download=`conferencia_${mes}_${ano}.csv`;a.click();
 }
 
+// ── RESULTADOS DO MÊS ────────────────────────────────────────────────────────
+pages.resultados=async function(){
+  const mes=new Date().getMonth()+1,ano=new Date().getFullYear();
+  document.getElementById('ct').innerHTML=`
+  <div class="sbar" style="margin-bottom:14px">
+    <select id="res-mes" style="width:auto">
+      ${MESES.map((nm,i)=>`<option value="${i+1}"${i+1===mes?' selected':''}>${nm}</option>`).join('')}
+    </select>
+    <input type="number" id="res-ano" value="${ano}" style="width:80px">
+    <button class="btn bp" onclick="carregarResultados()">📊 Carregar</button>
+  </div>
+  <div id="res-content"><div class="al ali">Selecione mês/ano e clique em Carregar.</div></div>`;
+};
+
+async function carregarResultados(){
+  const mes=parseInt(document.getElementById('res-mes')?.value||new Date().getMonth()+1);
+  const ano=parseInt(document.getElementById('res-ano')?.value||new Date().getFullYear());
+  const el=document.getElementById('res-content');if(!el)return;
+  el.innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    const[saidas,divs]=await Promise.all([
+      sb('saidas','GET',null,`?mes=eq.${mes}&ano=eq.${ano}&order=tabela_codigo`),
+      sb('divergencias','GET',null,`?mes=eq.${mes}&ano=eq.${ano}&resolvida=eq.false`)
+    ]);
+
+    // ── Cálculos gerais ───────────────────────────────────────────────────────
+    const tFat=saidas.reduce((s,r)=>s+parseFloat(r.valor||0),0);
+    const tSemCom=saidas.filter(r=>r.tabela_codigo==='X'||parseFloat(r.percentual||0)===0)
+                        .reduce((s,r)=>s+parseFloat(r.valor||0),0);
+    const tComCom=tFat-tSemCom;
+    const tComDev=saidas.reduce((s,r)=>{
+      const p=parseFloat(r.extra||0)>0?parseFloat(r.extra):parseFloat(r.percentual||0);
+      return s+parseFloat(r.valor||0)*p/100;
+    },0);
+    const tComRec=saidas.reduce((s,r)=>s+parseFloat(r.comissao||0),0);
+    const difCom=tComDev-tComRec;
+    const pctSemCom=tFat>0?tSemCom/tFat*100:0;
+    const pctComReal=tFat>0?tComRec/tFat*100:0;
+    const pctDif=tComDev>0?difCom/tComDev*100:0;
+
+    // ── Por tabela ────────────────────────────────────────────────────────────
+    const byTab={};
+    saidas.forEach(r=>{
+      const tab=r.tabela_codigo?.toUpperCase()||'?';
+      if(!byTab[tab])byTab[tab]={vendido:0,comDev:0,comRec:0};
+      byTab[tab].vendido+=parseFloat(r.valor||0);
+      const p=parseFloat(r.extra||0)>0?parseFloat(r.extra):parseFloat(r.percentual||0);
+      byTab[tab].comDev+=parseFloat(r.valor||0)*p/100;
+      byTab[tab].comRec+=parseFloat(r.comissao||0);
+    });
+    const tabRows=Object.entries(byTab).sort((a,b)=>a[0].localeCompare(b[0])).map(([tab,v])=>{
+      const dif=v.comDev-v.comRec,dpct=v.comDev>0?dif/v.comDev*100:0;
+      const semC=tab==='X'?v.vendido:0,comC=tab==='X'?0:v.vendido;
+      const cor=Math.abs(dif)<0.01?'var(--tx2)':dif>0?'var(--txd)':'#1D9E75';
+      return`<tr>
+        <td><span class="chip">${tab}</span></td>
+        <td style="text-align:right">${R(v.vendido)}</td>
+        <td style="text-align:right">${comC>0?R(comC):'—'}</td>
+        <td style="text-align:right">${semC>0?R(semC):'—'}</td>
+        <td style="text-align:right">${R(v.comDev)}</td>
+        <td style="text-align:right">${R(v.comRec)}</td>
+        <td style="text-align:right;color:${cor}">${R(dif)}</td>
+        <td style="text-align:right;color:${cor}">${dif>0?'+':''}${N(dpct)}%</td>
+      </tr>`;
+    }).join('');
+
+    // ── Histórico 12 meses ────────────────────────────────────────────────────
+    const hist=[];
+    for(let i=11;i>=0;i--){let m=mes-i,a=ano;if(m<=0){m+=12;a--;}hist.push({mes:m,ano:a});}
+    const histData=await Promise.all(hist.map(h=>sb('saidas','GET',null,`?mes=eq.${h.mes}&ano=eq.${h.ano}`)));
+    const histRows=hist.map((h,i)=>{
+      const rows=histData[i];
+      const fat=rows.reduce((s,r)=>s+parseFloat(r.valor||0),0);
+      const semC=rows.filter(r=>r.tabela_codigo==='X'||parseFloat(r.percentual||0)===0).reduce((s,r)=>s+parseFloat(r.valor||0),0);
+      const dev=rows.reduce((s,r)=>{const p=parseFloat(r.extra||0)>0?parseFloat(r.extra):parseFloat(r.percentual||0);return s+parseFloat(r.valor||0)*p/100},0);
+      const rec=rows.reduce((s,r)=>s+parseFloat(r.comissao||0),0);
+      const dif=dev-rec,psc=fat>0?semC/fat*100:0;
+      const atual=h.mes===mes&&h.ano===ano;
+      const cor=Math.abs(dif)<0.01?'var(--tx2)':dif>0?'var(--txd)':'#1D9E75';
+      return`<tr${atual?' style="font-weight:600;background:var(--bgi)"':''}>
+        <td>${MESES[h.mes-1]}/${h.ano}</td>
+        <td style="text-align:right">${fat>0?R(fat):'—'}</td>
+        <td style="text-align:right">${semC>0?R(semC):'—'}</td>
+        <td style="text-align:right">${fat>0?N(psc)+'%':'—'}</td>
+        <td style="text-align:right">${dev>0?R(dev):'—'}</td>
+        <td style="text-align:right">${rec>0?R(rec):'—'}</td>
+        <td style="text-align:right;color:${cor}">${fat>0?R(dif):'—'}</td>
+      </tr>`;
+    }).join('');
+
+    // ── Divergências a cobrar ─────────────────────────────────────────────────
+    const divCom=divs.filter(d=>d.campo_divergente==='comissao');
+    const totalCobrar=divCom.reduce((s,d)=>{
+      const dif=parseFloat(d.valor_sistema||0)-parseFloat(d.valor_pdf||0);
+      return s+(dif>0?dif:0);
+    },0);
+    const divRows=divs.map(d=>{
+      const vPdf=parseFloat(d.valor_pdf||0),vSis=parseFloat(d.valor_sistema||0);
+      const dif=d.campo_divergente==='comissao'?vSis-vPdf:null;
+      return`<tr>
+        <td><span class="chip">${d.numero_pedido}</span></td>
+        <td><span class="badge bgi" style="font-size:10px">${d.campo_divergente}</span></td>
+        <td style="text-align:right">${isNaN(vPdf)||d.valor_pdf==='—'?d.valor_pdf:R(vPdf)}</td>
+        <td style="text-align:right">${isNaN(vSis)||d.valor_sistema==='—'?d.valor_sistema:R(vSis)}</td>
+        <td style="text-align:right;color:${dif!==null&&dif>0.01?'var(--txd)':'var(--tx2)'}">${dif!==null&&dif>0.01?R(dif):'—'}</td>
+        <td><button class="btn bs" style="font-size:11px" onclick="resMarcarResolvida(${d.id})">✓ Resolver</button></td>
+      </tr>`;
+    }).join('');
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    el.innerHTML=`
+    <div class="g3" style="margin-bottom:14px">
+      <div class="mt"><div class="ml">Total faturado</div><div class="mv">${R(tFat)}</div></div>
+      <div class="mt"><div class="ml">Com comissão</div><div class="mv">${R(tComCom)}</div><div class="ms">${N(100-pctSemCom)}% do total</div></div>
+      <div class="mt"><div class="ml">Sem comissão (Tab X)</div><div class="mv" style="color:var(--tx2)">${R(tSemCom)}</div><div class="ms">${N(pctSemCom)}% do total</div></div>
+      <div class="mt"><div class="ml">Comissão devida</div><div class="mv">${R(tComDev)}</div></div>
+      <div class="mt"><div class="ml">Comissão recebida</div><div class="mv" style="color:#1D9E75">${R(tComRec)}</div><div class="ms">${N(pctComReal)}% s/ total fat.</div></div>
+      <div class="mt"><div class="ml">Diferença devida − recebida</div><div class="mv" style="color:${Math.abs(difCom)<0.01?'var(--tx2)':difCom>0?'var(--txd)':'#1D9E75'}">${R(difCom)}</div><div class="ms">${N(pctDif)}% da devida</div></div>
+    </div>
+
+    <div class="card">
+      <div class="rowb" style="margin-bottom:10px"><span style="font-size:11px;font-weight:500;color:var(--tx2)">POR TABELA — ${MESES[mes-1].toUpperCase()} ${ano}</span></div>
+      <div class="ov"><table><thead><tr>
+        <th>Tab</th><th style="text-align:right">Total vendido</th><th style="text-align:right">Com comissão</th><th style="text-align:right">Sem comissão</th>
+        <th style="text-align:right">Com devida</th><th style="text-align:right">Com recebida</th><th style="text-align:right">Dif R$</th><th style="text-align:right">Dif %</th>
+      </tr></thead><tbody>${tabRows}
+      <tr style="font-weight:600;background:var(--bg2)">
+        <td>Total</td><td style="text-align:right">${R(tFat)}</td><td style="text-align:right">${R(tComCom)}</td><td style="text-align:right">${R(tSemCom)}</td>
+        <td style="text-align:right">${R(tComDev)}</td><td style="text-align:right">${R(tComRec)}</td>
+        <td style="text-align:right;color:${Math.abs(difCom)<0.01?'var(--tx2)':difCom>0?'var(--txd)':'#1D9E75'}">${R(difCom)}</td>
+        <td style="text-align:right;color:${Math.abs(pctDif)<0.1?'var(--tx2)':pctDif>0?'var(--txd)':'#1D9E75'}">${difCom>0?'+':''}${N(pctDif)}%</td>
+      </tr></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <div class="rowb" style="margin-bottom:10px"><span style="font-size:11px;font-weight:500;color:var(--tx2)">EVOLUÇÃO — ÚLTIMOS 12 MESES</span></div>
+      <div class="ov"><table><thead><tr>
+        <th>Mês</th><th style="text-align:right">Faturado</th><th style="text-align:right">Sem com.</th><th style="text-align:right">% s/ com.</th>
+        <th style="text-align:right">Com devida</th><th style="text-align:right">Com recebida</th><th style="text-align:right">Dif R$</th>
+      </tr></thead><tbody>${histRows}</tbody></table></div>
+    </div>
+
+    ${divs.length?`<div class="card">
+      <div class="rowb" style="margin-bottom:10px">
+        <span style="font-size:11px;font-weight:500;color:var(--tx2)">DIVERGÊNCIAS PENDENTES — ${MESES[mes-1].toUpperCase()} ${ano}</span>
+        <span class="badge bgd">${divs.length} pendente(s)</span>
+      </div>
+      ${totalCobrar>0.01?`<div class="al alw" style="margin-bottom:10px">Total a cobrar (comissão): <strong>${R(totalCobrar)}</strong></div>`:''}
+      <div class="ov"><table><thead><tr>
+        <th>Nº Pedido</th><th>Tipo</th><th style="text-align:right">Valor PDF</th><th style="text-align:right">Valor sistema</th><th style="text-align:right">Diferença</th><th></th>
+      </tr></thead><tbody>${divRows}</tbody></table></div>
+    </div>`:`<div class="al als">Nenhuma divergência pendente neste período.</div>`}`;
+
+  }catch(e){el.innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+}
+async function resMarcarResolvida(id){
+  try{
+    await sb('divergencias','PATCH',{resolvida:true},`?id=eq.${id}`);
+    snk('Marcada como resolvida');
+    carregarResultados();
+  }catch(e){snk('Erro: '+e.message)}
+}
+
 // ── PARÂMETROS DO SISTEMA ─────────────────────────────────────────────────────
 const PARAM_META=[
   {chave:'meta_mensal',      label:'Meta mensal de vendas',          icone:'🎯',suffix:'R$',
@@ -2137,8 +2301,24 @@ const PARAM_META=[
    desc:'Diferença percentual máxima aceita entre o valor do pedido lançado e o valor no PDF para que o match seja considerado válido.'},
   {chave:'score_minimo_match',label:'Score mínimo de similaridade de nome',icone:'🔤',suffix:'/ 100',
    desc:'Pontuação mínima de similaridade de nome de cliente (0–100) para que dois registros sejam considerados o mesmo cliente na vinculação automática.'},
-  {chave:'reserva_meta',    label:'Saldo da reserva de meta',             icone:'🏦',suffix:'R$',
-   desc:'Saldo atual acumulado na reserva de meta. Atualizar após cada apuração mensal. O máximo é 30% da meta mensal.'}
+  {chave:'reserva_meta',            label:'Saldo da reserva de meta',                  icone:'🏦',suffix:'R$',
+   desc:'Saldo atual acumulado na reserva de meta. Atualizar após cada apuração mensal. O máximo é 30% da meta mensal.'},
+  {chave:'tolerancia_entrada',      label:'Tolerância de entradas',                    icone:'📥',suffix:'%',
+   desc:'Diferença percentual máxima aceita entre o valor do pedido e o valor no PDF de entradas. 0 = deve bater exato.'},
+  {chave:'tolerancia_saida_cima_a', label:'Tolerância saída ↑ Tabela A',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima na comissão recebida vs calculada — Tabela A.'},
+  {chave:'tolerancia_saida_cima_b', label:'Tolerância saída ↑ Tabela B',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima — Tabela B.'},
+  {chave:'tolerancia_saida_cima_c', label:'Tolerância saída ↑ Tabela C',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima — Tabela C.'},
+  {chave:'tolerancia_saida_cima_d', label:'Tolerância saída ↑ Tabela D',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima — Tabela D (padrão 8% por bonificação variável).'},
+  {chave:'tolerancia_saida_cima_e', label:'Tolerância saída ↑ Tabela E',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima — Tabela E.'},
+  {chave:'tolerancia_saida_cima_f', label:'Tolerância saída ↑ Tabela F',              icone:'📊',suffix:'%',
+   desc:'Margem percentual máxima aceita para cima — Tabela F (padrão 8%).'},
+  {chave:'tolerancia_saida_baixo',  label:'Tolerância saída ↓ todas as tabelas',      icone:'📉',suffix:'%',
+   desc:'Margem percentual máxima aceita para baixo (comissão recebida < calculada). 0 = nunca aceita receber menos.'}
 ];
 pages.parametros=async function(){
   document.getElementById('ct').innerHTML='<div class="ld">Carregando parâmetros...</div>';

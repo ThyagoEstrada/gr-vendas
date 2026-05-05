@@ -61,6 +61,14 @@ def sb_patch(tabela, data, query):
     if not r.ok:
         print(f"  ⚠️  Erro ao atualizar: {r.text[:200]}")
 
+# ─── TOLERÂNCIAS DE CONFERÊNCIA ──────────────────────────────────────────────
+# Manter sincronizadas com os parâmetros na página web (Parâmetros → Tolerâncias)
+TOL_ENTRADA_PCT     = 0.0   # % tolerância nas entradas (0 = deve bater exato)
+TOL_SAIDA_CIMA_PCT  = {     # % máximo para cima por tabela (recebeu mais do que calculado)
+    'A': 0.0, 'B': 0.0, 'C': 0.0, 'D': 8.0, 'E': 0.0, 'F': 8.0,
+}
+TOL_SAIDA_BAIXO_PCT = 0.0   # % máximo para baixo — todas as tabelas
+
 # ─── EXTRAIR TEXTO DO PDF ─────────────────────────────────────────────────────
 def extrair_texto(path):
     texto = ""
@@ -399,6 +407,23 @@ def vincular_pedidos(linhas, mes, ano):
             print(f"      → {e['numero_pedido']} | {e['cliente_nome']} | R$ {e['valor']:,.2f}")
 
 
+# ─── HELPERS DE TOLERÂNCIA ───────────────────────────────────────────────────
+def _tol_entrada_diverge(val_sistema, val_pdf):
+    """Retorna True se a diferença excede a tolerância de entrada."""
+    if TOL_ENTRADA_PCT == 0:
+        return abs(val_sistema - val_pdf) > 0.01  # 1 centavo para float
+    tol = val_sistema * TOL_ENTRADA_PCT / 100
+    return abs(val_sistema - val_pdf) > max(tol, 0.01)
+
+def _tol_saida_diverge(calc, recebido, tabela):
+    """Retorna True se a comissão recebida está fora da tolerância da tabela."""
+    if calc <= 0:
+        return abs(recebido - calc) > 0.01
+    dif_rel = (recebido - calc) / calc   # positivo = recebeu mais
+    tol_cima = TOL_SAIDA_CIMA_PCT.get(tabela.upper(), 0.0) / 100
+    tol_baixo = TOL_SAIDA_BAIXO_PCT / 100
+    return dif_rel < -(tol_baixo + 0.001) or dif_rel > tol_cima + 0.001
+
 # ─── CONFERIR DIVERGÊNCIAS DE ENTRADA ────────────────────────────────────────
 def conferir_entradas(linhas, mes, ano):
     pedidos = sb_get('pedidos', '?select=numero_pedido,valor_total')
@@ -412,7 +437,7 @@ def conferir_entradas(linhas, mes, ano):
         if np not in map_ped:
             divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano, 'numero_pedido': np,
                         'campo_divergente': 'nao_encontrado', 'valor_pdf': np, 'valor_sistema': 'não cadastrado'})
-        elif abs(float(map_ped[np]['valor_total'] or 0) - l['valor']) > 0.10:
+        elif _tol_entrada_diverge(float(map_ped[np]['valor_total'] or 0), l['valor']):
             divs.append({'tipo': 'entrada', 'mes': mes, 'ano': ano, 'numero_pedido': np,
                         'campo_divergente': 'valor', 'valor_pdf': str(l['valor']),
                         'valor_sistema': str(map_ped[np]['valor_total'])})
@@ -574,7 +599,7 @@ def processar_pdf(path):
                     continue
                 pct_calc = l['extra'] if l['extra'] > 0 else l['percentual']
                 calc = l['valor'] * pct_calc / 100
-                if abs(calc - l['comissao']) > 0.05:
+                if _tol_saida_diverge(calc, l['comissao'], l['tabela_codigo']):
                     divs.append({
                         'tipo': 'saida', 'mes': mes, 'ano': ano,
                         'numero_pedido': l['numero_pedido'],
