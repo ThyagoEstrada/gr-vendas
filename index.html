@@ -172,7 +172,8 @@ input:focus,select:focus{outline:none;border-color:var(--bo2)}
     <div class="ni" data-p="tabelas"><span>📋</span><span>Tabelas</span></div>
     <div class="ni" data-p="grupos"><span>🏢</span><span>Grupos</span></div>
     <div class="ni" data-p="usuarios"><span>🔑</span><span>Usuários</span></div>
-    <div class="ni" data-p="parametros"><span>⚙️</span><span>Parâmetros</span></div></div>
+    <div class="ni" data-p="parametros"><span>⚙️</span><span>Parâmetros</span></div>
+    <div class="ni" data-p="fila"><span>⏳</span><span>Fila de Aprovação</span><span id="fila-badge" style="display:none;margin-left:auto;background:#E24B4A;color:#fff;border-radius:10px;padding:0 5px;font-size:10px;font-weight:700;line-height:16px;min-width:16px;text-align:center"></span></div></div>
   <div class="ns"><div class="nl">Vendas</div>
     <div class="ni" data-p="rapido" style="color:var(--txi)"><span>⚡</span><span>Lançamento Rápido</span></div>
     <div class="ni" data-p="pedidos"><span>📦</span><span>Pedidos</span></div>
@@ -327,7 +328,7 @@ async function carregarParams(){
   }
 }
 document.querySelectorAll('.ni').forEach(e=>e.addEventListener('click',()=>{go(e.dataset.p);if(window.innerWidth<=640)sbClose();}));
-const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',parametros:'Parâmetros do sistema',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência',resultados:'Resultados do Mês'};
+const TITLES={dashboard:'Dashboard',clientes:'Clientes',prospecoes:'Prospecções',cidades:'Cidades',tabelas:'Tabelas de comissão',pedidos:'Pedidos',programados:'Pedidos Programados',comissoes:'Comissões',relatorios:'Relatórios',grupos:'Grupos Econômicos',usuarios:'Usuários',parametros:'Parâmetros do sistema',divergencias:'Divergências por Mês','rel-anual':'Relatório Anual por Cliente',voz:'Importação por Voz',rapido:'Lançamento Rápido',conferencia:'Conferência',resultados:'Resultados do Mês',fila:'Fila de Aprovação'};
 
 async function go(p){
   if(!Object.keys(PARAMS).length) await carregarParams();
@@ -340,6 +341,7 @@ async function go(p){
   if(!CL.length)CL=await sb('clientes','GET',null,'?order=nome&select=id,codigo,nome,status');
   if(!SC.length){try{SC=await sb('segmentos','GET',null,'?order=nome')}catch(e){SC=[]}}
   pages[p]&&pages[p]();
+  atualizarBadgeFila();
 }
 const pages={};
 
@@ -2128,6 +2130,117 @@ function exportarConferencia(){
   const blob=new Blob(['﻿'+[hdr,...linhas].join('\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`conferencia_${mes}_${ano}.csv`;a.click();
+}
+
+// ── FILA DE APROVAÇÃO DE CLIENTES ────────────────────────────────────────────
+async function atualizarBadgeFila(){
+  try{
+    const rows=await sb('clientes_pendentes','GET',null,'?status=eq.aguardando&select=id');
+    const n=rows.length;
+    const badge=document.getElementById('fila-badge');
+    if(!badge)return;
+    badge.textContent=n>0?String(n):'';
+    badge.style.display=n>0?'inline-block':'none';
+  }catch(e){}
+}
+
+let _filaRows={};
+pages.fila=async function(filtro='aguardando'){
+  document.getElementById('ta').innerHTML='';
+  document.getElementById('ct').innerHTML='<div class="ld">Carregando...</div>';
+  try{
+    const[rows,todos]=await Promise.all([
+      sb('clientes_pendentes','GET',null,`?status=eq.${filtro}&order=created_at.desc`),
+      sb('clientes_pendentes','GET',null,'?status=eq.aguardando&select=id')
+    ]);
+    _filaRows={};rows.forEach(r=>_filaRows[r.id]=r);
+    const nAg=todos.length;
+    const lblS={'aguardando':'⏳ Aguardando','aprovado':'✅ Aprovados','ignorado':'❌ Ignorados'};
+    const corS={'aguardando':'bgw','aprovado':'bgs','ignorado':'bgd'};
+    document.getElementById('ct').innerHTML=`
+    <div class="sbar" style="margin-bottom:14px">
+      ${['aguardando','aprovado','ignorado'].map(s=>
+        `<button class="btn${s===filtro?' bp':''}" onclick="pages.fila('${s}')">${lblS[s]}</button>`
+      ).join('')}
+      <span style="align-self:center;font-size:12px;color:var(--tx2)">${nAg} aguardando aprovação</span>
+    </div>
+    ${rows.length===0?'<div class="al als">Nenhum cliente neste filtro.</div>':rows.map(r=>`
+    <div class="card" id="fila-card-${r.id}">
+      <div class="rowb" style="margin-bottom:6px">
+        <strong style="font-size:14px">${r.nome}</strong>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge ${r.origem==='ENTRADA'?'bgi':'bgw'}">${r.origem}</span>
+          <span style="font-size:12px;color:var(--tx2)">${MESES[(r.mes||1)-1]}/${r.ano}</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:10px">
+        ${r.numero_pedido?`<span>NP <span class="chip">${r.numero_pedido}</span></span>`:''}
+        ${r.valor_total?`<span>Valor: <strong>${R(r.valor_total)}</strong></span>`:''}
+        ${r.cidade?`<span>📍 ${r.cidade}</span>`:'<span style="color:var(--tx3)">Cidade não informada</span>'}
+        ${r.codigo?`<span>Cód: ${r.codigo}</span>`:''}
+      </div>
+      <div id="fila-form-${r.id}" style="display:none"></div>
+      ${filtro==='aguardando'?`
+      <div style="display:flex;gap:8px" id="fila-btns-${r.id}">
+        <button class="btn bp bs" onclick="filaAbrirForm(${r.id})">✅ Cadastrar</button>
+        <button class="btn bs" style="color:var(--txd)" onclick="filaIgnorar(${r.id})">❌ Não é meu</button>
+      </div>`:`<span class="badge ${corS[r.status]}">${lblS[r.status]}</span>`}
+    </div>`).join('')}`;
+  }catch(e){document.getElementById('ct').innerHTML=`<div class="al alr">Erro: ${e.message}</div>`}
+};
+
+function filaAbrirForm(id){
+  const r=_filaRows[id];if(!r)return;
+  const cidOpts=CC.map(c=>`<option value="${c.id}">${c.cidade}${c.estado?' — '+c.estado:''}</option>`).join('');
+  const fs='width:100%;padding:6px 8px;border:.5px solid var(--bo2);border-radius:var(--r);background:var(--bg);color:var(--tx);font-family:inherit;font-size:13px';
+  const formEl=document.getElementById(`fila-form-${id}`);
+  const btnsEl=document.getElementById(`fila-btns-${id}`);
+  if(!formEl)return;
+  formEl.innerHTML=`
+    <div style="padding:10px 12px;background:var(--bg2);border:.5px solid var(--bo);border-radius:var(--r);margin-bottom:10px">
+      <div style="font-size:11px;font-weight:500;color:var(--txi);margin-bottom:8px">Confirmar cadastro</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <input id="fila-nome-${id}" value="${(r.nome||'').replace(/"/g,'&quot;')}" placeholder="Nome *" style="${fs}">
+        <input id="fila-cod-${id}" type="number" value="${r.codigo||''}" placeholder="Código (opcional)" style="${fs}">
+        <select id="fila-cid-${id}" style="${fs}"><option value="">— Cidade —</option>${cidOpts}</select>
+        <div style="display:flex;gap:6px">
+          <button class="btn bp" style="flex:1" onclick="filaConfirmar(${id})">✅ Confirmar cadastro</button>
+          <button class="btn bs" onclick="filaCancelarForm(${id})">✕</button>
+        </div>
+      </div>
+    </div>`;
+  formEl.style.display='block';
+  if(btnsEl)btnsEl.style.display='none';
+}
+async function filaConfirmar(id){
+  const nome=(document.getElementById(`fila-nome-${id}`)?.value||'').trim();
+  const cod=(document.getElementById(`fila-cod-${id}`)?.value||'').trim();
+  const cid=document.getElementById(`fila-cid-${id}`)?.value||null;
+  if(!nome){snk('Informe o nome');return}
+  try{
+    const novo=await sb('clientes','POST',{nome,codigo:cod?parseInt(cod):null,cidade_id:cid?parseInt(cid):null,status:'ativo'});
+    if(!novo||!novo[0]?.id)throw new Error('Falha ao cadastrar cliente');
+    CL=[];
+    await sb('clientes_pendentes','PATCH',{status:'aprovado',updated_at:new Date().toISOString()},`?id=eq.${id}`);
+    snk(`✅ "${nome}" cadastrado!`);
+    atualizarBadgeFila();
+    pages.fila();
+  }catch(e){snk('Erro: '+e.message)}
+}
+function filaCancelarForm(id){
+  const f=document.getElementById(`fila-form-${id}`);
+  const b=document.getElementById(`fila-btns-${id}`);
+  if(f)f.style.display='none';
+  if(b)b.style.display='flex';
+}
+async function filaIgnorar(id){
+  if(!confirm('Marcar como "Não é meu"?'))return;
+  try{
+    await sb('clientes_pendentes','PATCH',{status:'ignorado',updated_at:new Date().toISOString()},`?id=eq.${id}`);
+    snk('Marcado como ignorado');
+    atualizarBadgeFila();
+    pages.fila();
+  }catch(e){snk('Erro: '+e.message)}
 }
 
 // ── RESULTADOS DO MÊS ────────────────────────────────────────────────────────

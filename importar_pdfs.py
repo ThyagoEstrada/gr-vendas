@@ -424,6 +424,60 @@ def _tol_saida_diverge(calc, recebido, tabela):
     tol_baixo = TOL_SAIDA_BAIXO_PCT / 100
     return dif_rel < -(tol_baixo + 0.001) or dif_rel > tol_cima + 0.001
 
+# ─── FILA DE APROVAÇÃO DE CLIENTES ───────────────────────────────────────────
+def enfileirar_clientes_pendentes(linhas, mes, ano, origem):
+    """Detecta clientes do PDF não cadastrados e insere na fila de aprovação."""
+    from difflib import SequenceMatcher
+
+    clientes_db = sb_get('clientes', '?select=nome')
+    nomes_db = {c['nome'].upper().strip() for c in clientes_db}
+
+    existentes = sb_get('clientes_pendentes',
+        f'?mes=eq.{mes}&ano=eq.{ano}&origem=eq.{origem}&select=nome')
+    set_fila = {e['nome'].upper().strip() for e in existentes}
+
+    # Agregar dados por cliente (nome, valor total, primeiro NP)
+    por_cliente = {}
+    for l in linhas:
+        nome_up = l['cliente_nome'].upper().strip()
+        if nome_up not in por_cliente:
+            por_cliente[nome_up] = {
+                'nome': l['cliente_nome'],
+                'valor': 0.0,
+                'numero_pedido': l.get('numero_pedido')
+            }
+        por_cliente[nome_up]['valor'] += l.get('valor', 0)
+
+    inseridos = 0
+    for nome_up, dados in por_cliente.items():
+        # Já cadastrado? (fuzzy >= 75%)
+        melhor = max(
+            (SequenceMatcher(None, nome_up, n).ratio() for n in nomes_db),
+            default=0
+        ) if nomes_db else 0
+        if melhor >= 0.75:
+            continue
+
+        # Já na fila para este mês/ano?
+        if nome_up in set_fila:
+            continue
+
+        sb_post('clientes_pendentes', {
+            'nome': dados['nome'],
+            'origem': origem,
+            'mes': mes,
+            'ano': ano,
+            'valor_total': round(dados['valor'], 2),
+            'numero_pedido': dados['numero_pedido'],
+            'status': 'aguardando',
+            'updated_at': datetime.now().isoformat()
+        })
+        set_fila.add(nome_up)
+        inseridos += 1
+
+    return inseridos
+
+
 # ─── CONFERIR DIVERGÊNCIAS DE ENTRADA ────────────────────────────────────────
 def conferir_entradas(linhas, mes, ano):
     pedidos = sb_get('pedidos', '?select=numero_pedido,valor_total')
@@ -560,6 +614,11 @@ def processar_pdf(path):
                 print("   ⚠️  Nenhuma linha extraída. Verifique o formato do PDF.")
                 return
 
+            # Enfileirar clientes não cadastrados para aprovação
+            n_fila = enfileirar_clientes_pendentes(linhas, mes, ano, 'ENTRADA')
+            if n_fila:
+                print(f"   ⏳ {n_fila} cliente(s) adicionado(s) à fila de aprovação")
+
             # Salvar entradas
             sb_delete('entradas', f'?mes=eq.{mes}&ano=eq.{ano}')
             sb_post('entradas', linhas)
@@ -586,6 +645,11 @@ def processar_pdf(path):
             if not linhas:
                 print("   ⚠️  Nenhuma linha extraída. Verifique o formato do PDF.")
                 return
+
+            # Enfileirar clientes não cadastrados para aprovação
+            n_fila = enfileirar_clientes_pendentes(linhas, mes, ano, 'SAIDA')
+            if n_fila:
+                print(f"   ⏳ {n_fila} cliente(s) adicionado(s) à fila de aprovação")
 
             # Salvar saídas (limpa também registros com mes=0 do mesmo ano)
             sb_delete('saidas', f'?mes=eq.0&ano=eq.{ano}')
